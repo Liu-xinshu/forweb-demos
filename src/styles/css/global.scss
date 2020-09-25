@@ -1,0 +1,67 @@
+@charset "utf-8";
+@font-face {
+    /* 重命名字体名 */
+    font-family: "LED";
+    /*引入字体  */
+    src: url("~@styles/font/CUBS-LED-TFB-1.ttf");
+    font-weight: normal;
+    font-style: normal;
+}
+
+@font-face {
+    /* 重命名字体名 */
+    font-family: "NUMBER";
+    /*引入字体  */
+    src: url("~@styles/font/数字字体.ttf");
+    font-weight: normal;
+    font-style: normal;
+}
+//文本居中
+@mixin center($height: 100%) {
+    height: $height;
+    line-height: $height;
+    text-align: center;
+}
+// flex居中
+@mixin flex_center {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+//透明度
+@mixin opacity($opacity) {
+    opacity: $opacity;
+    $opacity-ie: $opacity * 100;
+    filter: alpha(opacity=$opacity-ie); //IE8
+}
+//超出显示省略号
+@mixin no-wrap {
+    /*加宽度width属来兼容部分浏览*/
+    white-space: nowrap;
+    overflow: hidden;
+    -ms-text-overflow: ellipsis;
+    -o-text-overflow: ellipsis;
+    text-overflow: ellipsis;
+}
+//超出几行显示省略号
+@mixin ellipsis-multi($line) {
+    //     display: -webkit-box; //将对象作为弹性伸缩盒子模型显示
+    //   -webkit-box-orient: vertical; //设置或检索伸缩盒对象的子元素的排列方式
+    //   -webkit-line-clamp: 3; //用来限制在一个块元素显示的文本的行数
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: $line;
+    overflow: hidden;
+    -ms-text-overflow: ellipsis;
+    -o-text-overflow: ellipsis;
+    text-overflow: ellipsis;
+}
+
+//----z-index----
+$base-z-index: 2;
+
+//----默认字号size----
+$base-size: 14px;
+
+//----color----
+$base-color: #333;
