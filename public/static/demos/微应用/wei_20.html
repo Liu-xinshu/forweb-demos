@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>模型动画</title>
+  <link rel="stylesheet" href="<%= VUE_APP_BASE_URL %>static/js/Freedo/freedo/Freedo/Widgets/widgets.css" />
+  <link rel="stylesheet" href="https://forweb.gbim360.com/latest/freedox/Examples/static/bucket.css">
+  <link href="https://forweb.gbim360.com/latest/freedox/FreedoX/ThirdParty/font-awesome/font-awesome.min.css"
+    rel="stylesheet">
+  <style>
+    * {
+      padding: 0;
+      margin: 0;
+      box-sizing: border-box;
+    }
+  </style>
+</head>
+
+<body>
+
+
+  <div id="freedoContainer" class="fullSize"></div>
+  <div id="loadingOverlay">
+    <h1>Loading...</h1>
+  </div>
+  <div id="toolbar"></div>
+
+  <script src="<%= VUE_APP_BASE_URL %>static/js/Freedo/freedo/Freedo/Freedo.js"></script>
+  <script src="<%= VUE_APP_BASE_URL %>static/js/Freedo/freedox/FreedoX/ThirdParty/1710_lodash/lodash.min.js"></script>
+  <script src="<%= VUE_APP_BASE_URL %>static/js/Freedo/freedox/FreedoX/FreedoX.js"></script>
+  <script src="<%= VUE_APP_BASE_URL %>static/js/Sandcastle-header.js"></script>
+  <script src="https://forweb.gbim360.com/latest/freedox/Examples/FighterRoute.js"></script>
+  <script src="https://forweb.gbim360.com/latest/freedox/Examples/FighterRoute2.js"></script>
+  <script src="https://forweb.gbim360.com/latest/freedox/Examples/FighterRoute3.js"></script>
+  <script>
+    var viewer = Freedo.FdApp.createDefaultViewer('freedoContainer', {
+      shouldAnimate: true,
+      timeline: true
+    });
+
+    var imgr = new Freedo.FdTools.FdImageryLayersManager(viewer);
+    imgr.addDefaultImageryLayer();
+
+    viewer.scene.requestRenderMode = false;
+    var am = new Freedo.FdMicroApp.FdModelAnimationManager(viewer);
+
+    var lon_lat_alt = [110.389, 21.299, 0.05];
+    var lon_lat_alt2 = [110.389 - 0.010, 21.299 - 0.010, 0.05];
+    var heading = 105.0;
+    var modelUrl = "https://forweb.gbim360.com/latest/freedox/Examples/data/GLTF/feiji.gltf";
+    var carUrl = "https://forweb.gbim360.com/latest/freedox/Examples/data/GroundVehicle.glb";
+    var manUrl = "data/Cesium_Man.glb";
+
+    viewer.scene.camera.flyTo({
+      destination: Freedo.Rectangle.fromDegrees(lon_lat_alt[0] - 0.01, lon_lat_alt[1] - 0.01, lon_lat_alt[0] + 0.01, lon_lat_alt[1] + 0.01)
+    });
+
+    var ready = false;
+    var primitives = [];
+    var models = [];
+
+    function createLines(points) {
+      var geomInstances = [];
+      var indices = points.indices;
+      for (var i = 0; i < indices.length - 1; i++) {
+        var index0 = indices[i].index;
+        var index1 = indices[i + 1].index;
+        var type = indices[i + 1].type;
+
+        var positions = [];
+        for (var j = index0; j <= index1; j++) {
+          let pt = points.positions[j];
+
+          let lon = pt.longitude;
+          let lat = pt.latitude;
+          let height = pt.height;
+
+          positions.push(Freedo.Cartesian3.fromDegrees(lon, lat, height));
+        }
+
+        var color = (type === 0) ? (Freedo.Color.YELLOW) : (type === 1 ? Freedo.Color.RED : Freedo.Color.BLUE);
+        geomInstances.push(new Freedo.GeometryInstance({
+          geometry: new Freedo.PolylineGeometry({
+            positions: positions,
+            width: 2.0
+          }),
+
+          attributes: {
+            colour: new Freedo.GeometryInstanceAttribute({
+              componentDatatype: Freedo.ComponentDatatype.FLOAT,
+              componentsPerAttribute: 4,
+              normalize: false,
+              value: [color.red, color.green, color.blue, color.alpha]
+            })
+          }
+        }));
+
+      }
+
+      if (geomInstances.length > 0) {
+        var appearance = new Freedo.PolylineMaterialAppearance({
+          material: Freedo.Material.fromType('Color')
+        });
+
+        var renamedVS = Freedo.ShaderSource.replaceMain(appearance._vertexShaderSource, 'czm_colour_main');
+        var colourMain =
+          'varying vec4 v_colour; \n' +
+          'void main() \n' +
+          '{ \n' +
+          '    czm_colour_main(); \n' +
+          '    v_colour = czm_batchTable_colour(batchId); \n' +
+          '}';
+
+        appearance._vertexShaderSource = renamedVS + '\n' + colourMain;
+
+        var renamedFS = Freedo.ShaderSource.replaceMain(appearance._fragmentShaderSource, 'czm_colour2_main');
+        var colour2Main =
+          'varying vec4 v_colour; \n' +
+          'void main() \n' +
+          '{ \n' +
+          '   czm_colour2_main(); \n' +
+          '   gl_FragColor = v_colour;' +
+          '}';
+        appearance._fragmentShaderSource = renamedFS + '\n' + colour2Main;
+
+        let primitive = new Freedo.Primitive({
+          geometryInstances: geomInstances,
+          appearance: appearance,
+          releaseMaterials: true,
+        });
+
+        viewer.scene.primitives.add(primitive);
+
+        return primitive;
+      }
+
+      return undefined;
+    }
+
+    function addModel(url, coords, yaw, minimumPixelSize) {
+      let heading = yaw * Freedo.Math.RADIANS_PER_DEGREE;
+      let pitch = 0.0 * Freedo.Math.RADIANS_PER_DEGREE;
+      let roll = 0.0 * Freedo.Math.RADIANS_PER_DEGREE;
+      let hpr = new Freedo.HeadingPitchRoll(heading, pitch, roll);
+
+      let origin = Freedo.Cartesian3.fromDegrees(coords[0], coords[1], coords[2]);
+      let modelMatrix = Freedo.Transforms.headingPitchRollToFixedFrame(origin, hpr);
+
+      let scaleMatrix = Freedo.Matrix4.fromScale(new Freedo.Cartesian3(1.0, 1.0, 1.0), new Freedo.Matrix4());
+      let worldMatrix = Freedo.Matrix4.multiply(modelMatrix, scaleMatrix, new Freedo.Matrix4());
+
+      return viewer.scene.primitives.add(Freedo.Model.fromGltf({
+        url: url,
+        modelMatrix: worldMatrix,
+        minimumPixelSize: minimumPixelSize
+      }));
+    }
+
+    function clear() {
+      am.reset();
+
+      for (var i = 0; i < primitives.length; i++) {
+        primitive = primitives[i];
+        if (Freedo.defined(primitive)) {
+          viewer.scene.primitives.remove(primitive);
+        }
+        primitives[i] = undefined;
+      }
+      primitives = [];
+
+      for (var i = 0; i < models.length; i++) {
+        model = models[i];
+        if (Freedo.defined(model)) {
+          viewer.scene.primitives.remove(model);
+        }
+        models[i] = undefined;
+      }
+      models = [];
+    }
+
+
+    Sandcastle.addToolbarButton('场景0', function () {
+      clear();
+
+      let model = addModel(modelUrl, [110.39612339, 21.29488885, lon_lat_alt[2]], -75, 128); //添加飞机模型
+      models.push(model);
+
+      //汽车模型动画
+      let animation = am.addAnimator("车", {
+        url: carUrl,
+        type: 1,
+        //showPath: true,
+        interpolationDegree: 2,
+        positions: [],
+        loop: false,
+        modelOption: {
+          minimumPixelSize: 64
+        }
+      });
+
+      var pts0 = [
+        [110.3962616, 21.2929351, lon_lat_alt[2]],
+        [110.3965489, 21.2936235, lon_lat_alt[2]],
+        [110.3947494, 21.2942818, lon_lat_alt[2]],
+        [110.3950519, 21.2950907, lon_lat_alt[2]],
+        [110.3957208, 21.2949134, lon_lat_alt[2]],
+        [110.3958030, 21.2951815, lon_lat_alt[2]]
+      ];
+      var pts0C = [];
+      for (var i = 0; i < pts0.length; i++) {
+        let wpos = Freedo.FdMisc.FdGeometric.tc(pts0[i]);
+        pts0C.push(wpos);
+      }
+
+      pts0C = Freedo.FdModel.FdLoft.smoothByPolyline(pts0C, [pts0C[0]], 720, undefined).line;
+
+      var pts0G = [];
+      for (var i = 0; i < pts0C.length; i++) {
+        var gg = Freedo.FdMisc.FdGeometric.tg(pts0C[i]);
+        pts0G.push(gg);
+      }
+
+      //给汽车设置路径坐标
+      am.setPositions(pts0G);
+      animation.readyPromise.then(function (model) {
+        animation.play();
+      }).otherwise(function (error) {
+        console.log(error);
+      });
+
+      animation.on(function (en, ev) {
+        if (en == 'End') {
+          let man1 = addModel(manUrl, [110.39590, 21.2951, lon_lat_alt[2]], 15, 64); //添加飞机模型
+          models.push(man1);
+
+          let man2 = addModel(manUrl, [110.39595, 21.2952, lon_lat_alt[2]], 15, 64); //添加飞机模型
+          models.push(man2);
+
+          let man3 = addModel(manUrl, [110.39600, 21.2953, lon_lat_alt[2]], 15, 64); //添加飞机模型
+          models.push(man3);
+
+          //汽车动画完成以后5秒钟，开始播放飞机动画
+          setTimeout(createFight0, 5000);
+        }
+      });
+
+      function createFight0() {
+        //中间
+        var route = new FighterRoute(lon_lat_alt, heading);
+        var points = route.calculateTrackPoints(100);
+
+        //头部
+        var pts = [[110.39612339, 21.29488885, lon_lat_alt[2]], [110.39624595, 21.29528209, lon_lat_alt[2]], [110.39622388, 21.29535632, lon_lat_alt[2]], [110.38717054, 21.29772939, lon_lat_alt[2]], [110.3867245, 21.29792183, lon_lat_alt[2]], [110.38639901, 21.29832743, lon_lat_alt[2]], [110.38623301, 21.29869271, lon_lat_alt[2]], [110.38652194, 21.29963268, lon_lat_alt[2]], [110.389, 21.299, lon_lat_alt[2]]];
+
+        var ptsC = [];
+        for (var i = 0; i < pts.length; i++) {
+          let wpos = Freedo.FdMisc.FdGeometric.tc(pts[i]);
+          ptsC.push(wpos);
+        }
+
+        ptsC = Freedo.FdModel.FdLoft.smoothByPolyline(ptsC, [ptsC[0]], 720, undefined).line;
+
+        var ptsG = [];
+        var ptsLen = [];
+        var sumLen = 0;
+        for (var i = 0; i < ptsC.length; i++) {
+          var gg = Freedo.FdMisc.FdGeometric.tg(ptsC[i]);
+          ptsG.push(gg);
+
+          var len = i == 0 ? 0 : Freedo.Cartesian3.distance(ptsC[i - 1], ptsC[i]);
+          sumLen += len;
+          ptsLen[i] = sumLen;
+        }
+
+        for (var i = 0; i < points.indices.length; i++) {
+          points.indices[i].index += ptsC.length;
+        }
+
+        points.indices.splice(0, 0, { index: 0, type: 0 });
+
+        for (var i = 0; i < points.positions.length; i++) {
+          points.positions[i].time += 130;
+        }
+
+        for (var i = ptsG.length - 1; i > -1; i--) {
+          var p = { longitude: ptsG[i][0], latitude: ptsG[i][1], height: ptsG[i][2], heading: 105, pitch: 0, time: 10 + ptsLen[i] / sumLen * 120 };
+          points.positions.splice(0, 0, p);
+        }
+
+        //尾巴
+        pts = [[110.40129508317677, 21.29570554239191, lon_lat_alt[2]], [110.40335467324428, 21.29515367689658, lon_lat_alt[2]], [110.40329156, 21.29488601, lon_lat_alt[2]], [110.40282667, 21.29461289, lon_lat_alt[2]], [110.40180698, 21.29405067, lon_lat_alt[2]], [110.40118632, 21.29368263, lon_lat_alt[2]], [110.39654084, 21.294851, lon_lat_alt[2]], [110.39658139, 21.29502463, lon_lat_alt[2]]];
+
+        ptsC = [];
+        for (var i = 0; i < pts.length; i++) {
+          var wpos = Freedo.FdMisc.FdGeometric.tc(pts[i]);
+          ptsC.push(wpos);
+        }
+
+        ptsC = Freedo.FdModel.FdLoft.smoothByPolyline(ptsC, [ptsC[0]], 720, undefined).line;
+
+        ptsG = [];
+        ptsLen = [];
+        sumLen = 0;
+        for (var i = 0; i < ptsC.length; i++) {
+          var gg = Freedo.FdMisc.FdGeometric.tg(ptsC[i]);
+          ptsG.push(gg);
+
+          var len = i == 0 ? 0 : Freedo.Cartesian3.distance(ptsC[i - 1], ptsC[i]);
+          sumLen += len;
+          ptsLen[i] = sumLen;
+        }
+
+        points.indices.push({ index: points.indices[points.indices.length - 1].index + ptsG.length, type: 0 });
+
+        var lastTime = points.positions[points.positions.length - 1].time;
+        for (var i = 0; i < ptsG.length; i++) {
+          var p = { longitude: ptsG[i][0], latitude: ptsG[i][1], height: ptsG[i][2], heading: 105, pitch: 0, time: 60 + lastTime + ptsLen[i] / sumLen * 120 };
+          points.positions.push(p);
+        }
+
+        //战斗机动画
+        am.addAnimator('战斗机', {
+          url: modelUrl,
+          type: 3,
+          positions: [],
+          multiplier: 10.0,
+          showPath: false,
+          modelOption: {
+            minimumPixelSize: 64
+          }
+        });
+        am.setPositions(points.positions);
+        am.getCurrentAnimator().showPath(false);
+
+        for (var i = 0; i < models.length; i++) {
+          model = models[i];
+          if (Freedo.defined(model)) {
+            model.show = false;
+          }
+        }
+
+        am.removeAnimator(animation);
+
+        var primitive = createLines(points);
+        if (Freedo.defined(primitive)) {
+          primitives.push(primitive);
+        }
+      }
+
+    });
+
+    Sandcastle.addToolbarButton('场景1', function () {
+      clear();
+
+      var route = new FighterRoute(lon_lat_alt, heading);
+      var points = route.calculateTrackPoints(100);
+
+      am.addAnimator('战斗机', {
+        url: modelUrl,
+        type: 3,
+        positions: [],
+        multiplier: 10.0,
+        showPath: false,
+        modelOption: {
+          minimumPixelSize: 64
+        }
+      });
+      am.setPositions(points.positions);
+      am.getCurrentAnimator().showPath(false);
+
+      var primitive = createLines(points);
+      if (Freedo.defined(primitive)) {
+        primitives.push(primitive);
+      }
+    });
+
+    Sandcastle.addToolbarButton('场景2', function () {
+      clear();
+
+      //=================================================
+      var route = new FighterRoute(lon_lat_alt, heading);
+      var points = route.calculateTrackPoints(100);
+
+      am.addAnimator('战斗机', {
+        url: modelUrl,
+        type: 3,
+        positions: [],
+        multiplier: 10.0,
+        modelOption: {
+          minimumPixelSize: 64
+        }
+      });
+      am.setPositions(points.positions);
+      am.getCurrentAnimator().showPath(false);
+
+      var primitive = createLines(points);
+      if (Freedo.defined(primitive)) {
+        primitives.push(primitive);
+      }
+
+      //=================================================
+      var route2 = new FighterRoute2(lon_lat_alt2, heading);
+      var points2 = route2.calculateTrackPoints(100);
+
+      am.addAnimator('战斗机2', {
+        url: modelUrl,
+        type: 3,
+        positions: [],
+        multiplier: 10.0,
+        modelOption: {
+          minimumPixelSize: 64
+        }
+      });
+      am.setPositions(points2.positions);
+      am.getCurrentAnimator().showPath(false);
+
+      var primitive2 = createLines(points2);
+      if (Freedo.defined(primitive2)) {
+        primitives.push(primitive2);
+      }
+    });
+
+    Sandcastle.addToolbarButton('场景3', function () {
+      clear();
+
+      //=================================================
+      var route = new FighterRoute(lon_lat_alt, heading);
+      var points = route.calculateTrackPoints(100);
+
+      am.addAnimator('战斗机', {
+        url: modelUrl,
+        type: 3,
+        positions: [],
+        multiplier: 10.0,
+        modelOption: {
+          minimumPixelSize: 64
+        }
+      });
+      am.setPositions(points.positions);
+      am.getCurrentAnimator().showPath(false);
+
+      var primitive = createLines(points);
+      if (Freedo.defined(primitive)) {
+        primitives.push(primitive);
+      }
+
+      //=================================================
+      var route2 = new FighterRoute3(lon_lat_alt2, heading);
+      var points2 = route2.calculateTrackPoints(100);
+
+      am.addAnimator('战斗机2', {
+        url: modelUrl,
+        type: 3,
+        positions: [],
+        multiplier: 10.0,
+        modelOption: {
+          minimumPixelSize: 64
+        }
+      });
+      am.setPositions(points2.positions);
+      am.getCurrentAnimator().showPath(false);
+
+      var primitive2 = createLines(points2);
+      if (Freedo.defined(primitive2)) {
+        primitives.push(primitive2);
+      }
+    });
+
+    Sandcastle.addToolbarButton('场景4（单）', function () {
+      clear();
+
+      var route = new FighterRoute(lon_lat_alt, heading);
+      var points = route.calculateTrackPoints(100);
+
+      am.addAnimator('战斗机4', {
+        url: modelUrl,
+        type: 3,
+        positions: [],
+        multiplier: 10.0,
+        modelOption: {
+          minimumPixelSize: 64
+        }
+      });
+      am.setPositions(points.positions);
+      am.getCurrentAnimator().showPath(false);
+
+      var primitive = createLines(points);
+      if (Freedo.defined(primitive)) {
+        primitives.push(primitive);
+      }
+
+    });
+
+    Sandcastle.addToolbarButton('场景5（单）', function () {
+      clear();
+
+      var route = new FighterRoute3(lon_lat_alt2, heading);
+      var points = route.calculateTrackPoints(100);
+
+      am.addAnimator('战斗机5', {
+        url: modelUrl,
+        type: 3,
+        positions: [],
+        multiplier: 10.0,
+        modelOption: {
+          minimumPixelSize: 64
+        }
+      });
+      am.setPositions(points.positions);
+      am.getCurrentAnimator().showPath(false);
+
+      var primitive = createLines(points);
+      if (Freedo.defined(primitive)) {
+        primitives.push(primitive);
+      }
+    });
+
+    Sandcastle.addToolbarButton('开始', function () {
+      am.getCurrentAnimator().start();
+    });
+
+    Sandcastle.addToolbarButton('停止', function () {
+      am.getCurrentAnimator().stop();
+    });
+
+    Sandcastle.addToolbarButton('跟随模型', function () {
+      am.getCurrentAnimator().track();
+    });
+
+    Sandcastle.addToolbarButton('取消跟随', function () {
+      am.getCurrentAnimator().unTrack();
+    });
+
+    Sandcastle.addToolbarButton('隐藏路径', function () {
+      for (var i = 0; i < primitives.length; i++) {
+        primitive = primitives[i];
+        if (Freedo.defined(primitive)) {
+          primitive.show = false;
+        }
+      }
+    });
+
+    Sandcastle.addToolbarButton('显示路径', function () {
+      for (var i = 0; i < primitives.length; i++) {
+        primitive = primitives[i];
+        if (Freedo.defined(primitive)) {
+          primitive.show = true;
+        }
+      }
+    });
+
+    Sandcastle.addToolbarButton('清除', function () {
+      clear();
+    });
+
+    //var ci = [114.55804, 30.449839, 40.79, 84.486573, -10.677767, 0.170036];
+    //Freedo.FdCamera.goToByCameraInfo(viewer.camera, ci);
+  </script>
+</body>
+
+</html>

@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>相机回撤恢复</title>
+  <link rel="stylesheet" href="https://forweb.gbim360.com/latest/freedo/Freedo/Widgets/widgets.css" />
+  <link rel="stylesheet" href="https://forweb.gbim360.com/latest/freedox/Examples/static/bucket.css">
+  
+  <style>
+    #camera-history-app {
+      background: rgba(42, 42, 42, 0.8);
+      padding: 4px;
+      border: 1px solid #444;
+      border-radius: 4px;
+      position: absolute;
+      top: 50px;
+      left: 10px;
+      line-height: 1.0;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="freedoContainer" class="fullSize"></div>
+  <div id="loadingOverlay">
+    <h1>Loading...</h1>
+  </div>
+  <div id="toolbar"></div>
+  <div id="camera-history-app">
+    <p>历史视点总数: {{ pathLength}}</p>
+    <p>当前视点序号: {{ currentIndex}}</p>
+  </div>
+  <script src="https://forweb.gbim360.com/latest/freedo/Freedo/Freedo.js"></script>
+  <script src="https://forweb.gbim360.com/latest/freedox/FreedoX/ThirdParty/1710_lodash/lodash.min.js"></script>
+  <script src="https://forweb.gbim360.com/latest/freedox/FreedoX/FreedoX.js"></script>
+  <script src="https://forweb.gbim360.com/latest/freedox/Examples/static/Sandcastle-header.js"></script>
+  <script src="https://forweb.gbim360.com/latest/freedox/FreedoX/ThirdParty/1804_vue/vue.min.js"></script>
+
+  <script>
+    var cameraHistoryUI = new Vue({
+      el: "#camera-history-app",
+      data: {
+        pathLength: -1,
+        currentIndex: -1
+      }
+    });
+
+    var viewer = Freedo.FdApp.createDefaultViewer('freedoContainer');
+
+    var cameraHistory = new Freedo.FdCamera.FdCameraHistory(viewer.camera);
+
+    Sandcastle.addToolbarButton('相机回撤', function () {
+      cameraHistory.prev();
+    });
+
+    Sandcastle.addToolbarButton('相机恢复', function () {
+      cameraHistory.next();
+    });
+
+    let opt = ['FdCameraHistory会在用户漫游交互操作过程中自动记录视点，方便进行还原查看。'];
+    Sandcastle.createTipsDOM(opt);
+
+    cameraHistory.on(function (eventType) {
+      if (eventType === 'CameraPathChanged') {
+        // console.log('pathLength: ' + cameraHistory.pathLength + ' currentIndex:' + cameraHistory.currentIndex);
+        cameraHistoryUI.pathLength = cameraHistory.pathLength;
+        cameraHistoryUI.currentIndex = cameraHistory.currentIndex;
+      }
+    });
+
+  </script>
+</body>
+
+</html>

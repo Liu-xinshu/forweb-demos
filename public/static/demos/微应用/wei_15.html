@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>部件选取-边框模式</title>
+  <link rel="stylesheet" href="<%= VUE_APP_BASE_URL %>static/js/Freedo/freedo/Freedo/Widgets/widgets.css" />
+  <link rel="stylesheet" href="https://forweb.gbim360.com/latest/freedox/Examples/static/bucket.css">
+</head>
+
+<body>
+
+
+  <div id="freedoContainer" class="fullSize"></div>
+  <div id="loadingOverlay">
+    <h1>Loading...</h1>
+  </div>
+  <div id="toolbar"></div>
+
+  <script src="<%= VUE_APP_BASE_URL %>static/js/Freedo/freedo/Freedo/Freedo.js"></script>
+  <script src="<%= VUE_APP_BASE_URL %>static/js/Freedo/freedox/FreedoX/ThirdParty/1710_lodash/lodash.min.js"></script>
+  <script src="<%= VUE_APP_BASE_URL %>static/js/Freedo/freedox/FreedoX/FreedoX.js"></script>
+  <script src="<%= VUE_APP_BASE_URL %>static/js/Sandcastle-header.js"></script>
+
+  <script>
+    var viewer = Freedo.FdApp.createDefaultViewer('freedoContainer');
+    viewer.cesium3DTilesInspector.setVisibility(false);
+    var imageryManager = new Freedo.FdTools.FdImageryLayersManager(viewer);
+    imageryManager.addDefaultImageryLayer();
+    var pmtsManager = new Freedo.FdTools.FdPMTSManager(viewer);
+    var pm = new Freedo.FdMicroApp.FdPickPMComponent(viewer);
+    var pmtsID, token;
+
+    pmtsID = pmtsManager.add({
+      url: 'https://cfgateway.gbim360.cn/freeserver-pmts/services/share/fd192944-b398-4054-bb90-4aeb7b6d2f1e/pmts/1.1.0/PMTSCapabilities.json?accesskey=6a4d1836-b338-4d00-88c2-6640bfe8b0f9'
+    }, token);
+
+    Sandcastle.addToolbarButton('开始边线模式', function () {
+      pm.start();
+      pm.setPMTSManager(pmtsManager);
+      pm.setMode('BBOX_MODE');
+    });
+
+    Sandcastle.addToolbarButton('通过部件ID显示相框', function () {
+      pm.setPMTSManager(pmtsManager);
+      pm.showComponentBBoxByUid(pmtsID, '消防泵房-GEODE@6');
+      var ci = [111.9869, 23.0546, 27.5218, 316.1948, -37.8355, 359.8786];
+      Freedo.FdCamera.goToByCameraInfo(viewer.camera, ci);
+    });
+
+    Sandcastle.addToolbarButton('在控制台中输出数据', function () {
+      console.log(pm.getData());
+    });
+
+    Sandcastle.addToolbarButton('取消', function () {
+      pm.cancel();
+    });
+
+  </script>
+</body>
+
+</html>

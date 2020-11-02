@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>非球面模式相机控制</title>
+  <link rel="stylesheet" href="<%= VUE_APP_BASE_URL %>static/js/Freedo/freedo/Freedo/Widgets/widgets.css" />
+  <link rel="stylesheet" href="https://forweb.gbim360.com/latest/freedox/Examples/static/bucket.css">
+  <style>
+    * {
+      padding: 0;
+      margin: 0;
+    }
+
+    html,
+    body,
+    #freedoContainer {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+    }
+
+    .cesium-viewer-toolbar {
+      left: 5px;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="background-plane"></div>
+  <div id="freedoContainer" class="fullSize"></div>
+  <div id="loadingOverlay">
+    <h1>Loading...</h1>
+  </div>
+  <div id="toolbar"></div>
+
+
+
+  <script src="<%= VUE_APP_BASE_URL %>static/js/Freedo/freedo/Freedo/Freedo.js"></script>
+  <script src="<%= VUE_APP_BASE_URL %>static/js/Freedo/freedox/FreedoX/ThirdParty/1710_lodash/lodash.min.js"></script>
+  <script src="<%= VUE_APP_BASE_URL %>static/js/Freedo/freedox/FreedoX/FreedoX.js"></script>
+  <script src="<%= VUE_APP_BASE_URL %>static/js/turf.min.js"></script>
+  <script src="<%= VUE_APP_BASE_URL %>static/js/heatmap.min.js"></script>
+  <script src="<%= VUE_APP_BASE_URL %>static/js/Sandcastle-header.js"></script>
+  <script>
+    var viewer = Freedo.FdApp.createDefaultViewer('freedoContainer', {
+      // homeButton: true // 是否展示Home按钮
+    }, {
+      // hasProvinceBoundaries: true // 是否绘制中国省界
+      planeMode: true // 平面模式
+    });
+
+    var scene = viewer.scene;
+    var camera = scene.camera;
+
+    var pModel = viewer.scene.primitives.add(new Freedo.FreedoPModelset({
+      url: 'https://forweb.gbim360.com/latest/sampleData/bigdata180411/tileset.json',
+      isPlaneViewer: true,
+    }));
+
+    Sandcastle.addToolbarButton('lookAt', function () {
+      Freedo.FdCamera.FdPlaneViewCameraHelper.cancelFlight();
+
+      Freedo.FdCamera.FdPlaneViewCameraHelper.lookAt(camera, Freedo.Cartesian3.ZERO, new Freedo.Cartesian3(0, -500, 500));
+    });
+
+    Sandcastle.addToolbarButton('setView', function () {
+      Freedo.FdCamera.FdPlaneViewCameraHelper.cancelFlight();
+
+      Freedo.FdCamera.FdPlaneViewCameraHelper.setView(camera, {
+        destination: new Freedo.Cartesian3(0, 0, 200),
+        orientation: {
+          heading: Freedo.Math.toRadians(0),
+          pitch: Freedo.Math.toRadians(-10)
+        }
+      });
+    });
+
+    Sandcastle.addToolbarButton('flyTo', function () {
+      Freedo.FdCamera.FdPlaneViewCameraHelper.cancelFlight();
+
+      Freedo.FdCamera.FdPlaneViewCameraHelper.flyTo(scene, {
+        destination: new Freedo.Cartesian3(1000, 0, 100),
+        orientation: {
+          direction: new Freedo.Cartesian3(-1, 0, 0),
+          up: new Freedo.Cartesian3(0, 1, 0)
+        }
+      });
+    });
+
+    Sandcastle.addToolbarButton('flyToBoundingSphere', function () {
+      Freedo.FdCamera.FdPlaneViewCameraHelper.cancelFlight();
+      Freedo.FdCamera.FdPlaneViewCameraHelper.flyToBoundingSphere(scene, new Freedo.BoundingSphere(new Freedo.Cartesian3(1000, 0, 100), 100));
+    });
+
+    Sandcastle.addToolbarButton('flyToEast', function () {
+      Freedo.FdCamera.FdPlaneViewCameraHelper.cancelFlight();
+      Freedo.FdCamera.FdPlaneViewCameraHelper.flyToBoundingSphere(scene, new Freedo.BoundingSphere(new Freedo.Cartesian3(1000, 0, 100), 100), {
+        offset: new Freedo.HeadingPitchRange(Freedo.Math.toRadians(-90.0), Freedo.Math.toRadians(-45.0), 0)
+      });
+    });
+
+    Sandcastle.addToolbarButton('flyToSouth', function () {
+      Freedo.FdCamera.FdPlaneViewCameraHelper.cancelFlight();
+      Freedo.FdCamera.FdPlaneViewCameraHelper.flyToBoundingSphere(scene, new Freedo.BoundingSphere(new Freedo.Cartesian3(1000, 0, 100), 100), {
+        offset: new Freedo.HeadingPitchRange(Freedo.Math.toRadians(0.0), Freedo.Math.toRadians(-45.0), 0)
+      });
+    });
+
+    Sandcastle.addToolbarButton('flyToWest', function () {
+      Freedo.FdCamera.FdPlaneViewCameraHelper.cancelFlight();
+      Freedo.FdCamera.FdPlaneViewCameraHelper.flyToBoundingSphere(scene, new Freedo.BoundingSphere(new Freedo.Cartesian3(1000, 0, 100), 100), {
+        offset: new Freedo.HeadingPitchRange(Freedo.Math.toRadians(90.0), Freedo.Math.toRadians(-45.0), 0)
+      });
+    });
+
+    Sandcastle.addToolbarButton('flyToNorth', function () {
+      Freedo.FdCamera.FdPlaneViewCameraHelper.cancelFlight();
+      Freedo.FdCamera.FdPlaneViewCameraHelper.flyToBoundingSphere(scene, new Freedo.BoundingSphere(new Freedo.Cartesian3(1000, 0, 100), 100), {
+        offset: new Freedo.HeadingPitchRange(Freedo.Math.toRadians(180.0), Freedo.Math.toRadians(-45.0), 0),
+        duration: 1
+      });
+    });
+  </script>
+</body>
+
+</html>

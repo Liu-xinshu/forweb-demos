@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>地形多洞开挖</title>
+  <link rel="stylesheet" href="<%= VUE_APP_BASE_URL %>static/js/Freedo/freedo/Freedo/Widgets/widgets.css" />
+  <link rel="stylesheet" href="https://forweb.gbim360.com/latest/freedox/Examples/static/bucket.css">
+</head>
+
+<body>
+
+  <div id="freedoContainer" class="fullSize"></div>
+  <div id="loadingOverlay">
+    <h1>Loading...</h1>
+  </div>
+  <div id="toolbar"></div>
+
+  <script src="https://forweb.gbim360.com/latest/freedo/Freedo/Freedo.js"></script>
+  <script src="https://forweb.gbim360.com/latest/freedox/FreedoX/FreedoX.js"></script>
+  <script src="https://forweb.gbim360.com/latest/freedox/FreedoX/ThirdParty/1710_lodash/lodash.min.js"></script>
+  <script src="https://forweb.gbim360.com/latest/freedox/Examples/static/Sandcastle-header.js"></script>
+
+  <script>
+    var viewer = Freedo.FdApp.createDefaultViewer('freedoContainer');
+
+    viewer.scene.skyAtmosphere.show = false;
+    viewer.scene.skyBox.show = false;
+    viewer.scene.skyBoxOnGround.show = false;
+    ////////////////////////////////////////////////////////////////////////////////////////////
+    var imageryManager = new Freedo.FdTools.FdImageryLayersManager(viewer);
+    imageryManager.addDefault();
+
+    function addModel(pointsArray) {
+      var boundingSphere = Freedo.BoundingSphere.fromPoints(pointsArray);
+      var modelMatrix = Freedo.Transforms.eastNorthUpToFixedFrame(boundingSphere.center);
+
+      var box = viewer.scene.primitives.add(Freedo.Model.fromGltf({
+        url: '../../sampleData/UnitBox.gltf',
+        show: true, // default
+        modelMatrix: modelMatrix,
+        scale: boundingSphere.radius * 0.5
+      }));
+
+      viewer.scene.requestRender();
+    }
+
+    var pts = [
+      [116.38602, 39.92100, 0.0],
+      [116.39507, 39.92124, 0.0],
+      [116.39552, 39.91247, 0.0],
+      [116.38649, 39.91210, 0.0],
+    ];
+
+    if (Freedo.FdMisc.FdMath.clockwise(pts) === true) {
+      pts = pts.reverse();
+    }
+
+    var pointsLength = pts.length;
+    var points = [];
+    for (var i = 0; i < pointsLength; i++) {
+      points[i] = Freedo.Cartesian3.fromDegrees(pts[i][0], pts[i][1], pts[i][2]);
+    }
+
+    var clippingPlanes = [];
+
+    function createPlanes() {
+      for (var i = 0; i < pointsLength; ++i) {
+        var nextIndex = (i + 1) % pointsLength;
+        var midpoint = Freedo.Cartesian3.add(points[i], points[nextIndex], new Freedo.Cartesian3());
+        midpoint = Freedo.Cartesian3.multiplyByScalar(midpoint, 0.5, midpoint);
+
+        var up = Freedo.Cartesian3.normalize(midpoint, new Freedo.Cartesian3());
+        var right = Freedo.Cartesian3.subtract(points[nextIndex], midpoint, new Freedo.Cartesian3());
+        right = Freedo.Cartesian3.normalize(right, right);
+
+        var normal = Freedo.Cartesian3.cross(right, up, new Freedo.Cartesian3());
+        normal = Freedo.Cartesian3.normalize(normal, normal);
+
+        var originCenteredPlane = new Freedo.Plane(normal, 0.0);
+        var distance = Freedo.Plane.getPointDistance(originCenteredPlane, midpoint);
+
+        clippingPlanes.push(new Freedo.ClippingPlane(normal, distance, i === pointsLength - 1));
+      }
+    }
+
+    createPlanes();
+    addModel(points);
+    var boundingSphere0 = Freedo.BoundingSphere.fromPoints(points);
+
+    for (var i = 0; i < pointsLength; ++i) {
+      var cartographic = Freedo.Cartographic.fromCartesian(points[i]);
+      cartographic.longitude += 0.0002;
+      Freedo.Cartographic.toCartesian(cartographic, undefined, points[i]);
+    }
+    createPlanes();
+    addModel(points);
+    var boundingSphere1 = Freedo.BoundingSphere.fromPoints(points);
+
+    viewer.scene.globe.clippingPlanes = new Freedo.ClippingPlaneCollection({
+      planes: clippingPlanes,
+      edgeWidth: 1.0,
+      useGltfModelMatrix: false,
+      edgeColor: Freedo.Color.WHITE,
+      enabled: true
+    });
+
+    var boundingSphere = Freedo.BoundingSphere.fromBoundingSpheres([boundingSphere0, boundingSphere1]);
+    viewer.camera.flyToBoundingSphere(boundingSphere, {
+      offset: new Freedo.HeadingPitchRange(0.5, -0.5, boundingSphere.radius * 5.0)
+    });
+
+  </script>
+</body>
+
+</html>

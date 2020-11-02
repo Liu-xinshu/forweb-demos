@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>GLTF剖切</title>
+    <link rel="stylesheet" href="<%= VUE_APP_BASE_URL %>static/js/Freedo/freedo/Freedo/Widgets/widgets.css" />
+    <link rel="stylesheet" href="https://forweb.gbim360.com/latest/freedox/Examples/static/bucket.css">
+</head>
+
+<body>
+    <div id="freedoContainer" class="fullSize"></div>
+    <div id="loadingOverlay">
+        <h1>Loading...</h1>
+    </div>
+    <div id="toolbar"></div>
+
+    <script src="https://forweb.gbim360.com/latest/freedo/Freedo/Freedo.js"></script>
+    <script src="https://forweb.gbim360.com/latest/freedox/FreedoX/FreedoX.js"></script>
+    <script src="<%= VUE_APP_BASE_URL %>static/js/Freedo/freedox/FreedoX/ThirdParty/1710_lodash/lodash.min.js"></script>
+    <script src="<%= VUE_APP_BASE_URL %>static/js/Sandcastle-header.js"></script>
+
+    <script>
+        //var viewer = Freedo.FdApp.createDefaultViewer('freedoContainer');
+        var viewer = Freedo.FdApp.createDefaultViewer('freedoContainer', {
+            // homeButton: true // 是否展示Home按钮
+        }, {
+            // hasProvinceBoundaries: true // 是否绘制中国省界
+            planeMode: true // 平面模式
+        });
+
+        var url = 'https://cfgateway.gbim360.cn/freeserver-wmfs/services/share/f1d0a1a1-10ad-46aa-baef-16d4349de013/wmfs/1.0.0/file/get/595418aa-ad6f-4bd8-a8f2-cf046f1df8db/595418aa-ad6f-4bd8-a8f2-cf046f1df8db/ap214/tileset.json?accesskey=f7718b52-1be6-4ec1-a9f8-278db484c399';
+
+        var pmodelsManager = new Freedo.FdApp.FdPModels(viewer.scene, {
+            url: url,
+        });
+
+        pmodelsManager.readyPromise.then(function (tileset) {
+            boundingSphere = tileset.boundingSphere;
+
+            viewer.camera.viewBoundingSphere(boundingSphere, new Freedo.HeadingPitchRange(0, 0.5, 0));
+            viewer.camera.lookAtTransform(Freedo.Matrix4.IDENTITY);
+        });
+        cp = new Freedo.FdMicroApp.FdClipPlane(viewer, [pmodelsManager], true);
+
+        cp.on(function (eventType, eventArg) {
+            if (eventType == "Cliping" || eventType == "ClipStart") {
+                needSave = true;
+            }
+
+            if (eventType == "DataChanged") {
+                //console.log(eventArg);
+            }
+        })
+
+
+        Sandcastle.addToolbarButton('水平方向剖切', function () {
+            cp.startClip('CLIPXY');
+        });
+
+        Sandcastle.addToolbarButton('水平方向剖切（反向）', function () {
+            cp.startClip('CLIPXYNEG');
+        });
+
+        Sandcastle.addToolbarButton('南北方向剖切', function () {
+            cp.startClip('CLIPYZ');
+        });
+
+        Sandcastle.addToolbarButton('东西方向剖切', function () {
+            cp.startClip('CLIPXZ');
+        });
+
+        Sandcastle.addToolbarButton('恢复到初始位置', function () {
+            cp.backToOriginPlane();
+        });
+
+        Sandcastle.addToolbarButton('显示操作轴', function () {
+            cp.showAxis();
+        });
+
+        Sandcastle.addToolbarButton('隐藏操作轴', function () {
+            cp.hideAxis();
+        });
+
+        Sandcastle.addToolbarButton('显示裁剪面', function () {
+            cp.showPlane();
+        });
+
+        Sandcastle.addToolbarButton('隐藏裁剪面', function () {
+            cp.hidePlane();
+        });
+
+        Sandcastle.addToolbarButton('在控制台中输出数据', function () {
+            console.log(cp.getData());
+        });
+
+        Sandcastle.addToolbarButton('取消', function () {
+            cp.cancel();
+        });
+
+        var needSave = false;
+
+        function writeToLocalStorage(prop, data) {
+            if (!Freedo.defined(data)) {
+                localStorage.removeItem(prop);
+            } else {
+                localStorage[prop] = JSON.stringify(data);
+            }
+        }
+
+        function readFromLocalStorage(prop) {
+            let rawData;
+            if (typeof localStorage[prop] !== 'undefined') {
+                try {
+                    rawData = JSON.parse(localStorage[prop]);
+                } catch (error) {
+                    console.log(error);
+                }
+            }
+
+            return rawData;
+        }
+
+        function save() {
+            if (needSave) {
+                writeToLocalStorage("clipOptionsPlane", cp.clipOptions);
+                needSave = false;
+            }
+        };
+
+        function read() {
+            let rawData = readFromLocalStorage("clipOptionsPlane");
+            cp.clipOptions = rawData;
+        };
+
+        //setTimeout("read()", 1000);
+        //setInterval("save()", 1000);
+    </script>
+</body>
+
+</html>

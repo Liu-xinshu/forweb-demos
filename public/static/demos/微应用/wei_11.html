@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>倾斜摄影卷帘</title>
+  <link rel="stylesheet" href="<%= VUE_APP_BASE_URL %>static/js/Freedo/freedo/Freedo/Widgets/widgets.css" />
+  <link rel="stylesheet" href="https://forweb.gbim360.com/latest/freedox/Examples/static/bucket.css">
+</head>
+
+<body>
+
+  <div id="freedoContainer" class="fullSize">
+    <div id="slider"></div>
+  </div>
+  <div id="loadingOverlay">
+    <h1>Loading...</h1>
+  </div>
+  <div id="toolbar"></div>
+  <script src="https://forweb.gbim360.com/latest/freedo/Freedo/Freedo.js"></script>
+  <script src="https://forweb.gbim360.com/latest/freedox/FreedoX/FreedoX.js"></script>
+  <script src="https://forweb.gbim360.com/latest/freedox/FreedoX/ThirdParty/1710_lodash/lodash.min.js"></script>
+  <script src="https://forweb.gbim360.com/latest/freedox/Examples/static/Sandcastle-header.js"></script>
+
+  <script>
+    var viewer = Freedo.FdApp.createDefaultViewer('freedoContainer', {
+      homeButton: false // 是否展示Home按钮
+    }, {
+      hasProvinceBoundaries: false // 是否绘制中国省界
+    });
+
+    viewer.scene.skyAtmosphere.show = false;
+    viewer.scene.skyBox.show = false;
+    viewer.scene.skyBoxOnGround.show = false;
+
+    var imageryManager = new Freedo.FdTools.FdImageryLayersManager(viewer);
+    imageryManager.add({
+      name: "MB地形",
+      type: "Mapbox",
+      iconUrl: "//res.gbim360.com/lib/freedo/rel/1.5.8/Freedo/Widgets/Images/ImageryProviders/mapboxStreets.png",
+      providerOptions: {
+        styleId: "streets-v11"
+      }
+    });
+
+    var slider = document.getElementById('slider');
+    var handler = new Freedo.ScreenSpaceEventHandler(slider);
+
+    var pModel = viewer.scene.primitives.add(new Freedo.FreedoPModelset({
+      url: '//ftp.gbim360.com/meisongjun/sample_zengzhuang_20180109_OSGB/sample_zengzhuang_20180109_OSGB/tileset.json',
+      modelMatrix: Freedo.Matrix4.fromArray([1.0000000000000002, 1.6653345369377348e-16, -7.242083627234663e-9, 0, 1.6653345369377348e-16, 1, 1.4994894936837255e-8, 0, 7.2420837660125414e-9, -1.499489515888186e-8, 1, 0, -10.946002210490406, 22.663940702565014, 20.208226192742586, 1]),
+      splitDirection: Freedo.ImagerySplitDirection.TOP, //只显示上部.
+      splitPosition: (slider.offsetTop) / slider.parentElement.offsetHeight
+    }));
+
+    pModel.readyPromise.then(function (pModel) {
+      viewer.camera.viewBoundingSphere(pModel.boundingSphere, new Freedo.HeadingPitchRange(0, -0.5, 0));
+      viewer.camera.lookAtTransform(Freedo.Matrix4.IDENTITY);
+
+      viewer.scene.requestRender();
+    });
+
+    var moveActive = false;
+    function move(movement) {
+      if (!moveActive) {
+        return;
+      }
+
+      var relativeOffset = movement.endPosition.y;
+      var splitPosition = (slider.offsetTop + relativeOffset) / slider.parentElement.offsetHeight;
+      slider.style.top = 100.0 * splitPosition + '%';
+      pModel.splitPosition = 1.0 - splitPosition;
+
+      viewer.scene.requestRender();
+    }
+
+    handler.setInputAction(function () {
+      moveActive = true;
+    }, Freedo.ScreenSpaceEventType.LEFT_DOWN);
+    handler.setInputAction(function () {
+      moveActive = true;
+    }, Freedo.ScreenSpaceEventType.PINCH_START);
+
+    handler.setInputAction(move, Freedo.ScreenSpaceEventType.MOUSE_MOVE);
+    handler.setInputAction(move, Freedo.ScreenSpaceEventType.PINCH_MOVE);
+
+    handler.setInputAction(function () {
+      moveActive = false;
+    }, Freedo.ScreenSpaceEventType.LEFT_UP);
+    handler.setInputAction(function () {
+      moveActive = false;
+    }, Freedo.ScreenSpaceEventType.PINCH_END);
+
+  </script>
+</body>
+
+</html>

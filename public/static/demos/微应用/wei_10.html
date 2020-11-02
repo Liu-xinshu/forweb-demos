@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>影像和地球卷帘</title>
+  <link rel="stylesheet" href="<%= VUE_APP_BASE_URL %>static/js/Freedo/freedo/Freedo/Widgets/widgets.css" />
+  <link rel="stylesheet" href="https://forweb.gbim360.com/latest/freedox/Examples/static/bucket.css">
+  <style>
+    #slider {
+      position: absolute;
+      left: 0px;
+      top: 50%;
+      background-color: #D3D3D3;
+      width: 100%;
+      height: 5px;
+      z-index: 9999;
+    }
+
+    #slider:hover {
+      cursor: ew-resize;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div id="freedoContainer" class="fullSize">
+    <div id="slider"></div>
+  </div>
+  <div id="loadingOverlay">
+    <h1>Loading...</h1>
+  </div>
+  <div id="toolbar"></div>
+
+  <script src="https://forweb.gbim360.com/latest/freedo/Freedo/Freedo.js"></script>
+  <script src="https://forweb.gbim360.com/latest/freedox/FreedoX/FreedoX.js"></script>
+  <script src="https://forweb.gbim360.com/latest/freedox/FreedoX/ThirdParty/1710_lodash/lodash.min.js"></script>
+  <script src="https://forweb.gbim360.com/latest/freedox/Examples/static/Sandcastle-header.js"></script>
+  <script>
+    var viewer = Freedo.FdApp.createDefaultViewer('freedoContainer', {
+      homeButton: false // 是否展示Home按钮
+    }, {
+      hasProvinceBoundaries: false // 是否绘制中国省界
+    });
+
+    viewer.scene.skyAtmosphere.show = false;
+    viewer.scene.skyBox.show = false;
+    viewer.scene.skyBoxOnGround.show = false;
+
+    var imageryManager = new Freedo.FdTools.FdImageryLayersManager(viewer);
+    imageryManager.addDefaultImageryLayer();
+
+    imageryManager.add({
+      name: "MB地形",
+      type: "Mapbox",
+      iconUrl: "//res.gbim360.com/lib/freedo/rel/1.5.8/Freedo/Widgets/Images/ImageryProviders/mapboxStreets.png",
+      providerOptions: {
+        styleId: "streets-v11"
+      }
+    });
+
+    viewer.scene.imagerySplitPosition = 0.5;
+
+    var layers = viewer.imageryLayers;
+    var mapboxLayer = layers.get(2);
+    mapboxLayer.splitDirection = Freedo.ImagerySplitDirection.LEFT; // mapbox影像图层只显示左部
+
+
+    var globe = viewer.scene.globe;
+    globe.splitDirection = Freedo.ImagerySplitDirection.TOP; //地球只显示上部.
+
+    var slider = document.getElementById('slider');
+    globe.splitPosition = (slider.offsetTop) / slider.parentElement.offsetHeight;
+    var handler = new Freedo.ScreenSpaceEventHandler(slider);
+
+    var moveActive = false;
+
+    function move(movement) {
+      if (!moveActive) {
+        return;
+      }
+
+      var relativeOffset = movement.endPosition.y;
+      var splitPosition = (slider.offsetTop + relativeOffset) / slider.parentElement.offsetHeight;
+      slider.style.top = 100.0 * splitPosition + '%';
+      globe.splitPosition = 1.0 - splitPosition;
+
+      viewer.scene.requestRender();
+    }
+
+    handler.setInputAction(function () {
+      moveActive = true;
+    }, Freedo.ScreenSpaceEventType.LEFT_DOWN);
+    handler.setInputAction(function () {
+      moveActive = true;
+    }, Freedo.ScreenSpaceEventType.PINCH_START);
+
+    handler.setInputAction(move, Freedo.ScreenSpaceEventType.MOUSE_MOVE);
+    handler.setInputAction(move, Freedo.ScreenSpaceEventType.PINCH_MOVE);
+
+    handler.setInputAction(function () {
+      moveActive = false;
+    }, Freedo.ScreenSpaceEventType.LEFT_UP);
+    handler.setInputAction(function () {
+      moveActive = false;
+    }, Freedo.ScreenSpaceEventType.PINCH_END);
+
+  </script>
+
+</body>
+
+</html>

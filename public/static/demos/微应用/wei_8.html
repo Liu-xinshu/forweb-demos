@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>PModel|多洞开挖</title>
+  <link rel="stylesheet" href="<%= VUE_APP_BASE_URL %>static/js/Freedo/freedo/Freedo/Widgets/widgets.css" />
+  <link rel="stylesheet" href="https://forweb.gbim360.com/latest/freedox/Examples/static/bucket.css">
+</head>
+
+<body>
+  <div id="freedoContainer" class="fullSize"></div>
+  <div id="loadingOverlay">
+    <h1>Loading...</h1>
+  </div>
+  <div id="toolbar"></div>
+
+  <script src="https://forweb.gbim360.com/latest/freedo/Freedo/Freedo.js"></script>
+  <script src="https://forweb.gbim360.com/latest/freedox/FreedoX/FreedoX.js"></script>
+  <script src="https://forweb.gbim360.com/latest/freedox/FreedoX/ThirdParty/1710_lodash/lodash.min.js"></script>
+  <script src="https://forweb.gbim360.com/latest/freedox/Examples/static/Sandcastle-header.js"></script>
+
+  <script>
+    var viewer = Freedo.FdApp.createDefaultViewer('freedoContainer');
+    var imageryManager = new Freedo.FdTools.FdImageryLayersManager(viewer);
+    imageryManager.addDefault();
+
+    var pModel = viewer.scene.primitives.add(new Freedo.FreedoPModelset({
+      url: '//ftp.gbim360.com/meisongjun/sample_zengzhuang_20180109_OSGB/sample_zengzhuang_20180109_OSGB/tileset.json',
+      modelMatrix: Freedo.Matrix4.fromArray([1.0000000000000002, 1.6653345369377348e-16, -
+        7.242083627234663e-9, 0, 1.6653345369377348e-16, 1, 1.4994894936837255e-8, 0,
+        7.2420837660125414e-9, -1.499489515888186e-8, 1, 0, -10.946002210490406,
+        22.663940702565014, 20.208226192742586, 1
+      ])
+    }));
+
+    function addModel(pointsArray) {
+      var pointsLength = pointsArray.length;
+      var points = [];
+      for (var i = 0; i < pointsLength; i++) {
+        points[i] = Freedo.Cartesian3.fromDegrees(pointsArray[i][0], pointsArray[i][1], pointsArray[i][2]);
+      }
+
+      var boundingSphere = Freedo.BoundingSphere.fromPoints(points);
+      var modelMatrix = Freedo.Transforms.eastNorthUpToFixedFrame(boundingSphere.center);
+
+      var box = viewer.scene.primitives.add(Freedo.Model.fromGltf({
+        url: 'https://forweb.gbim360.com/latest/sampleData/UnitBox.gltf',
+        show: true, // default
+        modelMatrix: modelMatrix,
+        scale: boundingSphere.radius * 0.5
+      }));
+
+      viewer.scene.requestRender();
+    }
+
+    var pts0 = [
+      [115.77779155518013, 38.95280875765975, 31.970],
+      [115.77728466971344, 38.95147609998494, 24.796],
+      [115.77738960493703, 38.95022119110942, 24.974],
+      [115.77947069182541, 38.95015735939970, 25.491],
+      [115.78060127435076, 38.95320284704093, 23.585],
+    ];
+    addModel(pts0); //增加红色立方体模型，便于对比观察
+
+    var pts1 = [
+      [115.78190508799283, 38.95176192603922, 23.338],
+      [115.78182626718335, 38.95157605067396, 23.007],
+      [115.78180351517442, 38.95133199069843, 22.830],
+      [115.78236349340818, 38.95125463866989, 23.334],
+      [115.78242760776088, 38.95168958908964, 23.208]
+    ];
+    addModel(pts1); //增加红色立方体模型，便于对比观察
+
+    pModel.readyPromise.then(function (pModel) {
+      viewer.camera.viewBoundingSphere(pModel.boundingSphere, new Freedo.HeadingPitchRange(0, -0.5, 0));
+      viewer.camera.lookAtTransform(Freedo.Matrix4.IDENTITY);
+
+      var mis = [pModel];
+
+      var bss = [];
+      for (var i = 0; i < mis.length; i++) {
+        var item = mis[i];
+        if (item.ready) {
+          bss.push(item.boundingSphere);
+        }
+      }
+      var offsetMatrix = bss.length > 0 ? Freedo.Matrix4.fromTranslation(Freedo.BoundingSphere.fromBoundingSpheres(bss).center) : Freedo.Matrix4.IDENTITY;
+
+      var clippingPlanes = [];
+      var planes0 = Freedo.FdMisc.FdMath.createClippingPlanes(pts0, offsetMatrix);
+      for (var l in planes0) {
+        clippingPlanes.push(planes0[l]);
+      }
+      var planes1 = Freedo.FdMisc.FdMath.createClippingPlanes(pts1, offsetMatrix);
+      for (var l in planes1) {
+        clippingPlanes.push(planes1[l]);
+      }
+
+      var cps = new Freedo.ClippingPlaneCollection({
+        planes: clippingPlanes,
+        edgeWidth: 0.0,
+        edgeColor: Freedo.Color.RED,
+        useGltfModelMatrix: false,
+        modelMatrix: offsetMatrix,
+        enabled: true
+      });
+      for (var i = 0; i < mis.length; i++) {
+        var item = mis[i];
+        item.clippingPlanes = cps;
+      }
+
+      viewer.scene.requestRender();
+    });
+
+  </script>
+</body>
+
+</html>

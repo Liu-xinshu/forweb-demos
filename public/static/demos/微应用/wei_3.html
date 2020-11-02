@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>非球面剖切</title>
+  <link rel="stylesheet" href="<%= VUE_APP_BASE_URL %>static/js/Freedo/freedo/Freedo/Widgets/widgets.css" />
+  <link rel="stylesheet" href="https://forweb.gbim360.com/latest/freedox/Examples/static/bucket.css">
+</head>
+
+<body>
+
+  <div id="freedoContainer" class="fullSize"></div>
+  <div id="loadingOverlay">
+    <h1>Loading...</h1>
+  </div>
+  <div id="toolbar"></div>
+
+  <script src="https://forweb.gbim360.com/latest/freedo/Freedo/Freedo.js"></script>
+  <script src="<%= VUE_APP_BASE_URL %>static/js/Freedo/freedox/FreedoX/ThirdParty/1710_lodash/lodash.min.js"></script>
+  <script src="https://forweb.gbim360.com/latest/freedox/FreedoX/FreedoX.js"></script>
+  <script src="<%= VUE_APP_BASE_URL %>static/js/Sandcastle-header.js"></script>
+
+
+  <script>
+    var viewer = Freedo.FdApp.createDefaultViewer('freedoContainer', {
+    }, {
+      planeMode: true // 平面模式
+    });
+
+    viewer.scene.requestRenderMode = false;
+
+    let pmtsManager = new Freedo.FdTools.FdPMTSManager(viewer);
+
+    let url = 'https://forweb.gbim360.com/latest/sampleData/%E6%96%87%E5%8C%96%E5%AE%A42018z/tilesetS.json';
+    let pmtsID = pmtsManager.add({
+      url: url,
+      maximumScreenSpaceError: 4,//初始化几何误差
+      maximumMemoryUsage: 32,//内存缓存上限
+      maximumAbsoluteMemoryUsage: 512,//内存峰值上限
+      autoFlyto: false,
+    }, undefined);
+
+    //加载完成后得到PModel
+    let pModel, cp = undefined;
+    let tilesets = [], pModelInfos;
+    pmtsManager.on(function (en, ev) {
+      if (en == 'PModelLoaded') {
+        //pmtsManager.getPmts(pmtsID).pModelInfos变量存放了该PMTS服务中包含的所有数据信息
+        //可以遍历pModelInfos得到全部的PModel
+        pModelInfos = pmtsManager.getPmts(pmtsID).pModelInfos;
+
+        let count = pModelInfos.length;
+        let i = 0;
+        let allBoundingSphere;
+        for (var pModelInfo of pModelInfos) {
+          let tileset = pModelInfo.pModel;
+          tilesets.push(tileset);
+
+          var pModelURL2 = tileset.url;
+
+          Freedo.Resource.fetchJson(pModelURL2).then((pmodelJson) => {
+            i++;
+
+            if (typeof pmodelJson.root.transform !== 'undefined') {
+              let modelMatrix = Freedo.Matrix4.fromArray(pmodelJson.root.transform);
+              tileset.modelMatrix = Freedo.Matrix4.inverse(modelMatrix, new Freedo.Matrix4());
+            }
+
+            if (!Freedo.defined(allBoundingSphere)) {
+              allBoundingSphere = Freedo.clone(tileset.boundingSphere, true);
+            } else {
+              allBoundingSphere = Freedo.BoundingSphere.union(allBoundingSphere, tileset.boundingSphere, allBoundingSphere);
+            }
+
+            if (i === count) {
+              Freedo.FdCamera.FdPlaneViewCameraHelper.flyToBoundingSphere(viewer.scene, allBoundingSphere, {
+                offset: new Freedo.HeadingPitchRange(0.0, -0.5, 0.0),
+                duration: 0.0
+              });
+            }
+          });
+        }
+
+        //trackManager.cancelTrack();
+        cp = new Freedo.FdMicroApp.FdClipPlane(viewer, tilesets, true);
+        cp.on(function (eventType, eventArg) {
+          if (eventType == "Cliping" || eventType == "ClipStart") {
+            console.log(eventArg, '1');
+          }
+          if (eventType == "DataChanged") {
+            console.log(eventArg, '2');
+          }
+        });
+      }
+    });
+
+    Sandcastle.addToolbarButton('水平方向剖切', function () {
+      cp.startClip('CLIPXY');
+    });
+
+    Sandcastle.addToolbarButton('水平方向剖切（反向）', function () {
+      cp.startClip('CLIPXYNEG');
+    });
+
+    Sandcastle.addToolbarButton('南北方向剖切', function () {
+      cp.startClip('CLIPYZ');
+    });
+
+    Sandcastle.addToolbarButton('东西方向剖切', function () {
+      cp.startClip('CLIPXZ');
+    });
+
+    Sandcastle.addToolbarButton('恢复到初始位置', function () {
+      cp.backToOriginPlane();
+    });
+
+    Sandcastle.addToolbarButton('显示操作轴', function () {
+      cp.showAxis();
+    });
+
+    Sandcastle.addToolbarButton('隐藏操作轴', function () {
+      cp.hideAxis();
+    });
+
+    Sandcastle.addToolbarButton('显示裁剪面', function () {
+      cp.showPlane();
+    });
+
+    Sandcastle.addToolbarButton('隐藏裁剪面', function () {
+      cp.hidePlane();
+    });
+
+    Sandcastle.addToolbarButton('在控制台中输出数据', function () {
+      console.log(cp.getData());
+    });
+
+    Sandcastle.addToolbarButton('取消', function () {
+      cp.cancel();
+    });
+  </script>
+</body>
+
+</html>

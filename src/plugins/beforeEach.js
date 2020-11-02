@@ -8,35 +8,38 @@ NProgress.configure({
   showSpinner: false,
 });
 let WHITE_ROUTER = ["/login"];
-const getToken = ()=>localStorage.token;
+const getToken = () => sessionStorage.token;
 router.beforeEach((to, from, next) => {
   NProgress.start();
 
-  if(getToken()){
-    if(to.path==="/login"){
-      next("/")
-    }else{
-      if($getters["user/queryRole"].length<=0){
-        $dispatch("user/getUserInfo").then(role=>{
-          $dispatch("user/getRoutes",role).then(()=>{
-            router.addRoutes($getters["user/queryAsyncRoutes"]);
-            next({...to, replace: true});
-          }).catch(err=>console.log(err))
-        })
-      }else {
+  if (getToken()) {
+    if (to.path === "/login") {
+      next({ path: "/" });
+    } else {
+      if ($getters["user/queryRole"].length <= 0) {
+        
+        $dispatch("user/getUserInfo").then((role) => {
+          $dispatch("user/getRoutes", role).then(() => {
+              router.addRoutes($getters["user/queryAsyncRoutes"]);
+              next({ ...to, replace: true });
+            }).catch((err) => console.log(err));
+            
+            
+        }).catch((err) => console.log(err));
+      } else {
         next();
       }
     }
-  }else {
-    if(WHITE_ROUTER.indexOf(to.path)>-1){
+  } else {
+    if (WHITE_ROUTER.indexOf(to.path) > -1) {
       next();
-    }else{
+    } else {
       next({
-        path:"/login"
-      })
+        path: "/login",
+      });
     }
   }
 });
-router.afterEach(()=>{
+router.afterEach(() => {
   NProgress.done();
-})
+});

@@ -1,9 +1,10 @@
 import Vue from "vue";
 import Element from "element-ui";
 import echarts from "echarts";
-import "./flexible";
+// import "./flexible";
 import "./drag";
 import "./beforeEach";
+import "./vuep";
 Vue.use(Element);
 
 

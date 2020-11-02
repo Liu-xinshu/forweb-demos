@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Model模型编辑</title>
+  <link rel="stylesheet" href="<%= VUE_APP_BASE_URL %>static/js/Freedo/freedo/Freedo/Widgets/widgets.css" />
+  <link rel="stylesheet" href="https://forweb.gbim360.com/latest/freedox/Examples/static/bucket.css">
+</head>
+
+<body>
+  <div id="freedoContainer" class="fullSize"></div>
+  <div id="loadingOverlay">
+    <h1>Loading...</h1>
+  </div>
+  <div id="toolbar"></div>
+
+  <script src="<%= VUE_APP_BASE_URL %>static/js/Freedo/freedo/Freedo/Freedo.js"></script>
+  <script src="<%= VUE_APP_BASE_URL %>static/js/Freedo/freedox/FreedoX/ThirdParty/1710_lodash/lodash.min.js"></script>
+  <script src="<%= VUE_APP_BASE_URL %>static/js/Freedo/freedox/FreedoX/FreedoX.js"></script>
+  <script src="<%= VUE_APP_BASE_URL %>static/js/Sandcastle-header.js"></script>
+
+  <script>
+    var viewer = Freedo.FdApp.createDefaultViewer('freedoContainer');
+    var data = {};
+
+    viewer.scene.requestRenderMode = false;
+    var imageryManager = new Freedo.FdTools.FdImageryLayersManager(viewer);
+    imageryManager.addDefaultImageryLayer();
+
+    /*
+    var position = new Freedo.Cartesian3(-1371108.6511167218, -5508684.080096612, 2901825.449865087);
+    var heading = Freedo.Math.toRadians(180);
+    var pitch = Freedo.Math.toRadians(2);
+    var roll = Freedo.Math.toRadians(-6);
+    var hpr = new Freedo.HeadingPitchRoll(heading, pitch, roll);
+    var orientation = Freedo.Transforms.headingPitchRollQuaternion(position, hpr);
+    var truck = viewer.scene.primitives.add(Freedo.Model.fromGltf({
+        url: '../../sampleData/GroundVehiclePBR/GroundVehiclePBR.gltf',
+        show: true, // default
+        modelMatrix: modelMatrix,
+        scale: 2.0, // double size
+        minimumPixelSize: 128, // never smaller than 128 pixels
+        maximumScale: 20000, // never larger than 20000 * model size (overrides minimumPixelSize)
+        allowPicking: false, // not pickable
+        debugShowBoundingVolume: false, // default
+        debugWireframe: false
+    }));
+    */
+
+    var th = new Freedo.FdMicroApp.FdTransformHelper(viewer);
+    th.on(function (eventType, eventArg) {
+      if (eventType == "DataChanged") {
+        needSave = true;
+        data = th.tranOptions;
+      }
+    })
+
+    var truck = undefined;
+    var origin = Freedo.Cartesian3.fromDegrees(113, 30, 1);
+    var modelMatrix = Freedo.Transforms.eastNorthUpToFixedFrame(origin);
+    Sandcastle.addToolbarButton('开始编辑', function () {
+      if (truck) {
+        viewer.scene.primitives.remove(truck);
+        truck = undefined;
+      }
+
+      truck = viewer.scene.primitives.add(Freedo.Model.fromGltf({
+        url: 'https://forweb.gbim360.com/latest/sampleData/GroundVehiclePBR/GroundVehiclePBR.gltf',
+        show: true, // default
+        modelMatrix: modelMatrix
+      }));
+
+      truck.readyPromise.then(function (model) {
+        var bs = model.boundingSphere;
+        var newCenter = Freedo.Matrix4.multiplyByPoint(modelMatrix, bs.center, new Freedo.Cartesian3());
+        var newBS = new Freedo.BoundingSphere(newCenter, bs.radius);
+        model.initModelMatrix = Freedo.clone(model.modelMatrix, true);
+        viewer.camera.viewBoundingSphere(newBS, new Freedo.HeadingPitchRange(0, -0.5, 0));
+        viewer.camera.lookAtTransform(Freedo.Matrix4.IDENTITY);
+
+        if (data && data['modelMatrix'])
+          truck.modelMatrix = data['modelMatrix'];
+        th.setData([truck]);
+        th.start("MOVE|ROTATE|SCALE");
+        trackManager.cancelTrack();
+      });
+    });
+
+    Sandcastle.addToolbarButton('重置', function () {
+      th.resetTransform();
+    });
+
+    Sandcastle.addToolbarButton('取消', function () {
+      th.cancel();
+    });
+
+    Sandcastle.addToolbarButton('在控制台中输出数据', function () {
+      console.log(th.getData());
+    });
+
+    var needSave = false;
+
+    function writeToLocalStorage(prop, data) {
+      if (!Freedo.defined(data)) {
+        localStorage.removeItem(prop);
+      } else {
+        localStorage[prop] = JSON.stringify(data);
+      }
+    }
+
+    function readFromLocalStorage(prop) {
+      let rawData = {};
+      if (typeof localStorage[prop] !== 'undefined') {
+        try {
+          rawData = JSON.parse(localStorage[prop]);
+        } catch (error) {
+          console.log(error);
+          return {};
+        }
+      }
+
+      return rawData;
+    }
+
+    function save() {
+      if (needSave) {
+        writeToLocalStorage("tranOptionsModel", data);
+        needSave = false;
+      }
+    };
+
+    function read() {
+      let rawData = readFromLocalStorage("tranOptionsModel");
+      data = rawData;
+    };
+
+    setInterval("save()", 1000);
+  </script>
+</body>
+
+</html>

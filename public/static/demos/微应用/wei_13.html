@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>路径动画</title>
+
+  <link href="https://forweb.gbim360.com/latest/freedox/FreedoX/ThirdParty/font-awesome/font-awesome.min.css"
+    rel="stylesheet">
+  <link rel="stylesheet" href="<%= VUE_APP_BASE_URL %>static/js/Freedo/freedo/Freedo/Widgets/widgets.css" />
+  <link rel="stylesheet" href="https://forweb.gbim360.com/latest/freedox/Examples/static/bucket.css">
+</head>
+
+<body>
+  <script src="https://forweb.gbim360.com/latest/freedox/Examples/static/pathani.js"></script>
+  <script src="https://forweb.gbim360.com/latest/freedo/Freedo/Freedo.js"></script>
+  <script src="https://forweb.gbim360.com/latest/freedox/FreedoX/FreedoX.js"></script>
+  <script src="https://forweb.gbim360.com/latest/freedox/FreedoX/ThirdParty/1710_lodash/lodash.min.js"></script>
+  <script src="https://forweb.gbim360.com/latest/freedox/Examples/static/Sandcastle-header.js"></script>
+  <script src="https://forweb.gbim360.com/latest/freedox/FreedoX/ThirdParty/1804_vue/vue.min.js"></script>
+
+  <div id="freedoContainer" class="fullSize"></div>
+  <div id="loadingOverlay">
+    <h1>Loading...</h1>
+  </div>
+  <div id="toolbar"></div>
+  <script> var viewer = Freedo.FdApp.createDefaultViewer('freedoContainer');
+
+    viewer.scene.requestRenderMode = false;
+
+    viewer.scene.logarithmicDepthBuffer = false;
+    viewer.scene.camera.frustum.near = 0.01;
+
+    var pathsManager = new Freedo.FdMicroApp.FdPathsManager(viewer, undefined, 1);
+    var terrainManager = new Freedo.FdTools.FdTerrain(viewer);
+    var pmtsManager = new Freedo.FdTools.FdPMTSManager(viewer);
+
+    //terrainManager.setTerrain("//terrain.gbim360.com/", "STK", []);
+
+    //跨世纪
+    let rootComputedMatrix;
+    let token = undefined;
+    var baseURL = 'https://cfgateway.gbim360.cn/freeserver-pmts/services/share/';
+
+    //铁路桥
+    var q11 = baseURL +
+      '03d8f513-2849-4f91-9096-237be2874d83/pmts/1.1.0/PMTSCapabilities.json?accesskey=591f3979-a8db-4950-9307-758a44fb720e';
+
+    //新铁路桥
+    var q12 = baseURL +
+      '6305d01c-ec0f-4d60-bc42-2dbd81323f09/pmts/1.1.0/PMTSCapabilities.json?accesskey=d924522e-60c9-426e-903c-77344f8ec83c';
+
+    //黑龙江大桥
+    var q13 = baseURL +
+      '73faf9dd-619f-43b0-bdbc-d4a465c77c9e/pmts/1.1.0/PMTSCapabilities.json?accesskey=c7d762d4-6a0e-4aee-a9de-05ba77f0a122';
+
+    var pmtsID;
+
+    pmtsManager.on(function (en, ev) {
+
+      if (en == 'PModelLoaded') {
+        var pmts = pmtsManager.getPmts(pmtsID);
+        rootComputedMatrix = pmts.pModelInfos[0].pModel._root.computedTransform;
+        var pathPts = GetNewPts();
+        pathPts.forEach(function (item, index) {
+
+          pathsManager.appendPathPoint(currentGroupId, {
+            position: pathPts[index],
+            name: '第' + index + '个控制点'
+          });
+
+        })
+
+      }
+    })
+
+
+    var currentGroupId;
+    currentGroupId = pathsManager.createGroup('Group_' + new Date().getTime());
+
+
+    pathsManager.setCurrentGroupID(currentGroupId);
+
+    pathsManager.setSpeed(20);
+    pathsManager.setLoop(false);
+    pathsManager.setKBStatus(true);
+    pathsManager.setSmoothRate(0.02);
+    pathsManager.setHeading(0);
+    pathsManager.setPitch(30);
+
+    //设置高度偏移，就是在实际拾取到的点的高度的基础上增加一个值
+    pathsManager.setOffsetH(1);
+
+    //如果设置的是非路径视角，则setHeight不可以设置为0
+    pathsManager.setHeight(2);
+    pathsManager.setPathViewMode(true);
+
+    pathsManager.setPathShow(true);
+    pathsManager.setPathNameShow(true);
+
+    var pts = tempoints;
+    var offset = [-515556.46689, -3007008.84796, 0];
+    function GetNewPts() {
+      var newPts = [];
+      var td = Freedo.Math.toDegrees;
+
+      for (var kk = 0; kk < tempoints.length; kk++) {
+        var np = new Freedo.Cartesian3(pts[kk][0] + offset[0], pts[kk][1] + offset[1], pts[kk][2] + offset[2]);
+        var np2 = Freedo.Matrix4.multiplyByPoint(rootComputedMatrix, np, new Freedo.Cartesian3());
+        var gg = Freedo.Cartographic.fromCartesian(np2);
+        newPts.push([td(gg.longitude), td(gg.latitude), gg.height]);
+      }
+      return newPts;
+    }
+
+
+    pathsManager.on(function (eventType, params) {
+      if (eventType == "GroupChanged") {
+        var groupOpt = pathsManager.getGroupOptions(params);
+        var points = groupOpt.list;
+      }
+
+      if (eventType == "GroupsChanged") {
+        var groupIDs = pathsManager.getAllGroupIDs();
+      }
+
+      if (eventType == "DataChanged") {
+        console.log(params);
+      }
+
+      if (eventType == "KeyPress") {
+        //console.log(params);
+      }
+
+      if (eventType == 'Passed') {
+        console.log(params);
+      }
+    })
+
+    // Sandcastle.addToolbarButton('加载铁路桥数据', function () {
+    pmtsID = pmtsManager.add({
+      url: q11
+    }, token);
+    // });
+
+    // Sandcastle.addToolbarButton('新铁路桥', function () {
+    //     pts = tempoints3;
+    //     offset = [0, 0, 0];
+    //     pmtsID = pmtsManager.add({
+    //         url: q12
+    //     }, token);
+    // });
+
+    // Sandcastle.addToolbarButton('黑龙江大桥', function () {
+    //     pts = tempoints2;
+    //     offset = [-7789.09112, -16229.81996, -112.74996];
+    //     pmtsID = pmtsManager.add({
+    //         url: q13
+    //     }, token);
+    // });
+
+    Sandcastle.addToolbarButton('播放', function () {
+      if (pmtsID == undefined) {
+        alert('请先加载铁路桥数据');
+        return;
+      }
+      pathsManager.setCurrentGroupID(currentGroupId);
+      pathsManager.start();
+    });
+
+    Sandcastle.addToolbarButton('从50号点开始', function () {
+      pathsManager.changeStartPoint(49);
+    });
+
+    Sandcastle.addToolbarButton('从100号点开始', function () {
+      pathsManager.changeStartPoint(99);
+    });
+
+    Sandcastle.addToolbarButton('从150号点开始', function () {
+      pathsManager.changeStartPoint(149);
+    });
+
+    Sandcastle.addToolbarButton('暂停', function () {
+      pathsManager.pause();
+    });
+
+    Sandcastle.addToolbarButton('停止', function () {
+      pathsManager.stop();
+    });
+
+    Sandcastle.addToolbarButton('显示路径', function () {
+      pathsManager.setPathShow(true);
+    });
+
+    Sandcastle.addToolbarButton('隐藏路径', function () {
+      pathsManager.setPathShow(false);
+    });
+
+    Sandcastle.addToolbarButton('显示路径名', function () {
+      pathsManager.setPathNameShow(true);
+    });
+
+    Sandcastle.addToolbarButton('隐藏路径名', function () {
+      pathsManager.setPathNameShow(false);
+    });
+
+    Sandcastle.addToolbarButton('定位', function () {
+      pmtsManager.getUidBoundingSphere(pmtsID, undefined, token,
+        function (bs) {
+          if (Freedo.defined(bs)) {
+            var gg = Freedo.FdMisc.FdGeometric.tg(bs.center);
+            viewer.camera.flyToBoundingSphere(bs);
+          }
+
+        });
+    })
+
+    Sandcastle.addToolbarButton('清空', function () {
+      var groupIDs = pathsManager.getAllGroupIDs();
+      for (var k in groupIDs)
+        pathsManager.removeGroup(groupIDs[k]);
+    });
+
+    Sandcastle.addToolbarButton('在控制台中输出数据', function () {
+      console.log(pathsManager.getData());
+    });
+
+    var imgMGR = new Freedo.FdTools.FdImageryLayersManager(viewer);
+    imgMGR.addDefaultImageryLayer();
+
+    let opt = ['PageUp和PageDown按键可以手动控制前进后退'];
+    Sandcastle.createTipsDOM(opt);
+
+
+
+  </script>
+
+</body>
+
+</html>

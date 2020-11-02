@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>部件选取</title>
+  <link rel="stylesheet" href="<%= VUE_APP_BASE_URL %>static/js/Freedo/freedo/Freedo/Widgets/widgets.css" />
+  <link rel="stylesheet" href="https://forweb.gbim360.com/latest/freedox/Examples/static/bucket.css">
+</head>
+
+<body>
+
+  <div id="freedoContainer" class="fullSize"></div>
+  <div id="loadingOverlay">
+    <h1>Loading...</h1>
+  </div>
+  <div id="toolbar"></div>
+
+  <script src="https://forweb.gbim360.com/latest/freedo/Freedo/Freedo.js"></script>
+  <script src="https://forweb.gbim360.com/latest/freedox/FreedoX/FreedoX.js"></script>
+  <script src="https://forweb.gbim360.com/latest/freedox/FreedoX/ThirdParty/1710_lodash/lodash.min.js"></script>
+  <script src="https://forweb.gbim360.com/latest/freedox/Examples/static/Sandcastle-header.js"></script>
+  <script src="https://forweb.gbim360.com/latest/freedox/FreedoX/ThirdParty/1804_vue/vue.min.js"></script>
+  <script src="https://forweb.gbim360.com/latest/freedox/Examples/temp/stageupdate.js"></script>
+
+  <script>
+    var viewer = Freedo.FdApp.createDefaultViewer('freedoContainer');
+
+    ///////////////////////////////////////////////////////////////////////////////////////
+    var handler;
+
+    function addMouseOver() {
+      var stages = viewer.scene.postProcessStages;
+      var silhouette = stages.add(Freedo.PostProcessStageLibrary.createSilhouetteStage());
+      silhouette.enabled = true;
+      handler = new Freedo.ScreenSpaceEventHandler(viewer.scene.canvas);
+      handler.setInputAction(function (movement) {
+        var pickedObject = viewer.scene.pick(movement.endPosition);
+        if (Freedo.defined(pickedObject)) {
+          console.log('找到');
+          silhouette.selected = [pickedObject.content._model];
+        } else {
+          silhouette.selected = [];
+        }
+      }, Freedo.ScreenSpaceEventType.MOUSE_MOVE);
+    }
+
+    //addMouseOver();
+    ///////////////////////////////////////////////////////////////////////////////////////
+
+    ///////////////////////////////////////////////////////////////////////////////////////
+    function addMouseClick() {
+      handler = new Freedo.ScreenSpaceEventHandler(viewer.scene.canvas);
+      handler.setInputAction(function (movement) {
+        var pickedObject = viewer.scene.pick(movement.position);
+        if (Freedo.defined(pickedObject)) {
+          console.log('找到');
+
+          var targetId = pickedObject.getProperty('component');
+          var fs = pickedObject.content._features;
+          for (var f of fs) {
+            var id = f.getProperty('component');
+            //console.log(id);
+            if (id == targetId) {
+              console.log(id);
+              f.content._model.silhouetteColor = Freedo.Color['RED'];
+              f.content._model.silhouetteSize = 10;
+            }
+          }
+        }
+      }, Freedo.ScreenSpaceEventType.LEFT_CLICK);
+    }
+
+    //addMouseClick();
+    ///////////////////////////////////////////////////////////////////////////////////////
+
+    ///////////////////////////////////////////////////////////////////////////////////////
+    function addMouseOver2() {
+      var blurStage = new BlurStage();
+      viewer.scene.postProcessStages.add(blurStage.gaussianBlur);
+      handler = new Freedo.ScreenSpaceEventHandler(viewer.scene.canvas);
+      handler.setInputAction(function (movement) {
+        var pickedObject = viewer.scene.pick(movement.endPosition);
+        if (Freedo.defined(pickedObject)) {
+          console.log('找到');
+          blurStage.maskStage.selected = [pickedObject.primitive];
+          blurStage.compositeStage.selected = [pickedObject.primitive];
+        } else {
+          blurStage.maskStage.selected = [];
+          blurStage.compositeStage.selected = [];
+        }
+      }, Freedo.ScreenSpaceEventType.MOUSE_MOVE);
+    }
+    //addMouseOver2();
+    ///////////////////////////////////////////////////////////////////////////////////////
+
+    ////////////////////////////////////////////////////////////////////////////////////////////
+    var pmtsManager = new Freedo.FdTools.FdPMTSManager(viewer);
+    var url = 'https://cfgateway.gbim360.cn/freeserver-pmts/services/share/0ab675ef-72de-4b52-ae0a-96dae76a95b4/pmts/1.1.0/PMTSCapabilities.json?accesskey=a748d6c5-16c5-40af-95d6-cdb2ffa4cb64';
+
+    //指定数据的位置，如果数据本身没有带位置
+    var pos = Freedo.Cartesian3.fromDegrees(116, 40, -15);
+    var modelMatrix = Freedo.Transforms.eastNorthUpToFixedFrame(pos);
+
+    var pmtsID = pmtsManager.add({
+      id: 'wenhuashi',
+      url: url,
+      modelMatrix: modelMatrix, //如果数据本身已经带了坐标则不需要指定本参数
+      flytoOrGoto: true //是否跳入到PMTS数据，true为跳入，false为飞入，默认飞入
+    }, undefined);
+
+    //加载完成后得到PModel
+    var pModel;
+    pmtsManager.on(function (en, ev) {
+      if (en == 'PModelLoaded') {
+        //pmtsManager.getPmts(pmtsID).pModelInfos变量存放了该PMTS服务中包含的所有数据信息
+        //可以遍历pModelInfos得到全部的PModel
+        pModel = pmtsManager.getPmts(pmtsID).pModelInfos[0].pModel;
+        //pm.setIgnorePModels([pModel]);
+      }
+    });
+
+    ////////////////////////////////////////////////////////////////////////////////////////////
+
+    // var tileset = viewer.scene.primitives.add(new Freedo.FreedoPModelset({
+    //     url: '../../sampleData/文化室2018z',
+    //     allowPicking: true
+    // }));
+
+    // tileset.readyPromise.then(function (tileset) {
+    //     viewer.camera.flyToBoundingSphere(tileset.boundingSphere, 0);
+    //     // var th = new Freedo.FdMicroApp.FdTransformHelper(viewer);
+    //     // th.hideAxis();
+    //     // th.setData([tileset]);
+    //     // th.applyTransformDelta(0.0, 0.0, 0.0, 0, 0, 0, 1, 1, 1);
+    // });
+
+    viewer.cesium3DTilesInspector.setVisibility(false);
+
+    // var tileset2 = viewer.scene.primitives.add(new Freedo.FreedoPModelset({
+    //     url: '../../sampleData/文化室2018z'
+    // }));
+
+    // tileset2.readyPromise.then(function (tileset) {
+    //     var th = new Freedo.FdMicroApp.FdTransformHelper(viewer);
+    //     th.hideAxis();
+    //     th.setData([tileset2]);
+    //     th.applyTransformDelta(0.00002, 0.00002, 0, 0, 0, 0, 2, 2, 2);
+    //     //viewer.camera.flyToBoundingSphere(tileset.boundingSphere, 0);
+    // });
+
+    // tileset.readyPromise.then(function (tileset) {
+    //     viewer.camera.viewBoundingSphere(tileset.boundingSphere, new Freedo.HeadingPitchRange(0, -0.5, 0));
+    //     viewer.camera.lookAtTransform(Freedo.Matrix4.IDENTITY);
+    // });
+
+    var pm = new Freedo.FdMicroApp.FdPickPMComponent(viewer);
+    //可以设置为双击触发
+    //pm.setClickMode(Freedo.ScreenSpaceEventType.LEFT_DOUBLE_CLICK);
+
+    pm.on(function (eventType, eventArg) {
+      if (eventType == "DataChanged") {
+        console.log(eventArg);
+      }
+    })
+
+    Sandcastle.addToolbarButton('增加忽略清单', function () {
+      //可以设置需要屏蔽点击的部件
+      pm.addIgnoreID(["3Xqwsdf0141w6Za9kANLIU@30", "1IEJRxEMb40PxEEB$RlYJ0@517", "1IEJRxEMb40PxEEB$RlYWP@519",
+        "1IEJRxEMb40PxEEB$RlYXC@520", "1IEJRxEMb40PxEEB$RlYqL@525", "2H8x88qyD9$9b5BJTOyCO_@531",
+        "1IEJRxEMb40PxEEB$RlYRq@518", "1IEJRxEMb40PxEEB$RlYsU@527", "1IEJRxEMb40PxEEB$RlYr1@526"
+      ]);
+    });
+
+    Sandcastle.addToolbarButton('清空忽略清单', function () {
+      //清空已设置的忽略清单
+      pm.clearIgnoreID();
+    });
+
+    Sandcastle.addToolbarButton('开始', function () {
+      pm.start();
+    });
+
+    Sandcastle.addToolbarButton('高亮模式', function () {
+      pm.start();
+      pm.setHighlightColor(255, 0, 0, 0.8);
+      pm.setMode('HIGH_LIGHT');
+      viewer.scene.context.uniformState.highlightModeRepalce = true;
+    });
+
+    Sandcastle.addToolbarButton('半透明模式', function () {
+      pm.start();
+      pm.setHighlightColor(255, 255, 255, 0.5);
+      pm.setMode('HIGH_LIGHT');
+      viewer.scene.context.uniformState.highlightModeRepalce = false;
+    });
+
+    Sandcastle.addToolbarButton('隐藏模式', function () {
+      pm.start();
+      pm.setMode('SHOW_HIDE');
+    });
+
+    Sandcastle.addToolbarButton('闪烁-高亮模式', function () {
+      pm.start();
+      pm.setHighlightColor(255, 255, 0, 0.8);
+      pm.setMode('BLINK_HL');
+      viewer.scene.context.uniformState.highlightModeRepalce = true;
+    });
+
+    Sandcastle.addToolbarButton('闪烁-隐藏模式', function () {
+      pm.start();
+      pm.setMode('BLINK_SH');
+    });
+
+    Sandcastle.addToolbarButton('单显模式', function () {
+      pm.start();
+      pm.setMode('SHOW_SINGLE');
+    });
+
+    Sandcastle.addToolbarButton('选取模式', function () {
+      pm.start();
+      pm.setMode('PICK_MODE');
+    });
+
+    Sandcastle.addToolbarButton('在控制台中输出数据', function () {
+      console.log(pm.getData());
+    });
+
+    Sandcastle.addToolbarButton('记忆视角信息', function () {
+      var ci = Freedo.FdCamera.getCurrentCameraInfo(viewer.scene.camera);
+      save(ci);
+    });
+
+    Sandcastle.addToolbarButton('取消', function () {
+      pm.cancel();
+    });
+
+
+    // let handler2 = new Freedo.ScreenSpaceEventHandler(viewer.scene.canvas);
+    // var HiddenComponentEBS = [];
+    // handler2.setInputAction(function (movement) {
+    //     pm.pickComponent(movement.position, function (EBS, pModelID, ancestorComponents) {
+    //         if (EBS == undefined || EBS == "") {
+    //             CurSelEBS = '';
+    //             return;
+    //         }
+    //         if (HiddenComponentEBS.includes(EBS) == false) {
+    //             HiddenComponentEBS.push(EBS);
+    //         }
+    //         var style = new Freedo.FreedoPModelStyle({
+    //             show: {
+    //                 evaluate: function (feature, result) {
+    //                     //这里根据feature来写自己的逻辑
+    //                     var componentid = feature.getProperty('component');//部件的ID
+    //                     if (HiddenComponentEBS.indexOf(componentid) > -1) {
+    //                         return false;
+    //                     } else {
+    //                         return true;
+    //                     }
+    //                 }
+    //             }
+    //         });
+
+    //         pModel.style = style;
+    //         viewer.scene.requestRender();
+    //     }, true);
+    // }, Freedo.ScreenSpaceEventType.LEFT_CLICK);
+
+  </script>
+</body>
+
+</html>

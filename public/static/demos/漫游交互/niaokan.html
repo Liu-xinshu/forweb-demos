@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>鸟瞰中国</title>
+  <link rel="stylesheet" href="<%= VUE_APP_BASE_URL %>static/js/Freedo/freedo/Freedo/Widgets/widgets.css" />
+  <link rel="stylesheet" href="https://forweb.gbim360.com/latest/freedox/Examples/static/bucket.css">
+  <style>
+    * {
+      padding: 0;
+      margin: 0;
+    }
+
+    html,
+    body,
+    #freedoContainer {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+    }
+
+    .cesium-viewer-toolbar {
+      left: 5px;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="background-plane"></div>
+  <div id="freedoContainer" class="fullSize"></div>
+  <div id="loadingOverlay">
+    <h1>Loading...</h1>
+  </div>
+  <div id="toolbar"></div>
+  <!-- <script src="<%= VUE_APP_BASE_URL %>static/js/Freedo/freedo/Freedo/Freedo.js"></script> -->
+  <script src="https://forweb.gbim360.com/latest/freedo/Freedo/Freedo.js"></script>
+  <script src="<%= VUE_APP_BASE_URL %>static/js/Freedo/freedox/FreedoX/ThirdParty/1710_lodash/lodash.min.js"></script>
+  <!-- <script src="<%= VUE_APP_BASE_URL %>static/js/Freedo/freedox/FreedoX/FreedoX.js"></script> -->
+  <script src="https://forweb.gbim360.com/latest/freedox/FreedoX/FreedoX.js"></script>
+  <script src="<%= VUE_APP_BASE_URL %>static/js/Sandcastle-header.js"></script>
+  <script>
+    var viewer = Freedo.FdApp.createDefaultViewer('freedoContainer');
+
+    let opt = ['点击‘鸟瞰中国’按钮，相机跳转到观察整个中国的范围'];
+    Sandcastle.createTipsDOM(opt);
+
+    function flyAround() {
+      Freedo.FdCamera.aerialView(viewer.scene);
+    }
+
+    Sandcastle.addToolbarButton('鸟瞰中国', function () {
+      flyAround();
+    });
+
+    Sandcastle.addToolbarButton('鼠标漫游加速', function () {
+      Freedo.FdCamera.shiftUp(viewer.camera);
+    });
+
+    Sandcastle.addToolbarButton('鼠标漫游减速', function () {
+      Freedo.FdCamera.shiftDown(viewer.camera);
+    });
+
+  </script>
+</body>
+
+</html>

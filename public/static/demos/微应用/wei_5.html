@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>多模型剖切</title>
+  <link rel="stylesheet" href="<%= VUE_APP_BASE_URL %>static/js/Freedo/freedo/Freedo/Widgets/widgets.css" />
+  <link rel="stylesheet" href="https://forweb.gbim360.com/latest/freedox/Examples/static/bucket.css">
+</head>
+
+<body>
+
+  <div id="freedoContainer" class="fullSize"></div>
+  <div id="loadingOverlay">
+    <h1>Loading...</h1>
+  </div>
+  <div id="toolbar"></div>
+
+  <script src="https://forweb.gbim360.com/latest/freedo/Freedo/Freedo.js"></script>
+  <script src="https://forweb.gbim360.com/latest/freedox/FreedoX/FreedoX.js"></script>
+  <script src="<%= VUE_APP_BASE_URL %>static/js/Freedo/freedox/FreedoX/ThirdParty/1710_lodash/lodash.min.js"></script>
+  <script src="<%= VUE_APP_BASE_URL %>static/js/Sandcastle-header.js"></script>
+
+  <script>
+    var viewer = Freedo.FdApp.createDefaultViewer('freedoContainer');
+    ////////////////////////////////////////////////////////////////////////////////////////////
+    var pmtsManager = new Freedo.FdTools.FdPMTSManager(viewer);
+    var url =
+      'https://cfgateway.gbim360.cn/freeserver-pmts/services/share/0ab675ef-72de-4b52-ae0a-96dae76a95b4/pmts/1.1.0/PMTSCapabilities.json?accesskey=a748d6c5-16c5-40af-95d6-cdb2ffa4cb64';
+
+    //指定数据的位置，如果数据本身没有带位置
+    var pos = Freedo.Cartesian3.fromDegrees(116, 40, -15);
+    var modelMatrix = Freedo.Transforms.eastNorthUpToFixedFrame(pos);
+
+    var pmtsID = pmtsManager.add({
+      id: 'wenhuashi',
+      url: url,
+      modelMatrix: modelMatrix, //如果数据本身已经带了坐标则不需要指定本参数
+      flytoOrGoto: true //是否跳入到PMTS数据，true为跳入，false为飞入，默认飞入
+    }, undefined);
+
+    var pmtsID2 = pmtsManager.add({
+      id: 'wenhuashi2',
+      url: url,
+      modelMatrix: modelMatrix, //如果数据本身已经带了坐标则不需要指定本参数
+      flytoOrGoto: true //是否跳入到PMTS数据，true为跳入，false为飞入，默认飞入
+    }, undefined);
+
+    //加载完成后得到PModel
+    var tileset, tileset2;
+    pmtsManager.on(function (en, ev) {
+      if (en == 'PModelLoaded') {
+        //pmtsManager.getPmts(pmtsID).pModelInfos变量存放了该PMTS服务中包含的所有数据信息
+        //可以遍历pModelInfos得到全部的PModel
+        if (ev == pmtsID)
+          tileset = pmtsManager.getPmts(pmtsID).pModelInfos[0].pModel;
+        if (ev == pmtsID2) {
+          tileset2 = pmtsManager.getPmts(pmtsID2).pModelInfos[0].pModel;
+          var th = new Freedo.FdMicroApp.FdTransformHelper(viewer);
+          th.setData([tileset2]);
+          th.applyTransformDelta(0.00002, 0.00002, 0, 0, 0, 0, 2, 2, 2);
+        }
+      }
+    });
+    ////////////////////////////////////////////////////////////////////////////////////////////
+
+    // var tileset = viewer.scene.primitives.add(new Freedo.FreedoPModelset({
+    //     url: '../../sampleData/文化室2018z'
+    // }));
+
+    // var tileset2 = viewer.scene.primitives.add(new Freedo.FreedoPModelset({
+    //     url: '../../sampleData/文化室2018z'
+    // }));
+
+    // tileset.readyPromise.then(function(tileset) {
+    //     viewer.camera.viewBoundingSphere(tileset.boundingSphere, new Freedo.HeadingPitchRange(0, -0.5, 0));
+    //     viewer.camera.lookAtTransform(Freedo.Matrix4.IDENTITY);
+    // });
+
+    // tileset2.readyPromise.then(function(tileset) {
+    //     var th = new Freedo.FdMicroApp.FdTransformHelper(viewer);
+    //     //th.hideAxis();
+    //     th.setData([tileset2]);
+    //     th.applyTransformDelta(0.00002, 0.00002, 0, 0, 0, 0, 2, 2, 2);
+    // });
+
+    var cp = undefined;
+    Sandcastle.addToolbarButton('水平方向剖切', function () {
+      if (cp) cp.cancel();
+      cp = new Freedo.FdMicroApp.FdClipPlane(viewer, [tileset, tileset2]);
+      cp.startClip('CLIPXY');
+    });
+
+    Sandcastle.addToolbarButton('水平方向剖切（反向）', function () {
+      if (cp) cp.cancel();
+      cp = new Freedo.FdMicroApp.FdClipPlane(viewer, [tileset, tileset2]);
+      cp.startClip('CLIPXYNEG');
+    });
+
+    Sandcastle.addToolbarButton('南北方向剖切', function () {
+      if (cp) cp.cancel();
+      cp = new Freedo.FdMicroApp.FdClipPlane(viewer, [tileset, tileset2]);
+      cp.startClip('CLIPYZ');
+    });
+
+    Sandcastle.addToolbarButton('东西方向剖切', function () {
+      if (cp) cp.cancel();
+      cp = new Freedo.FdMicroApp.FdClipPlane(viewer, [tileset, tileset2]);
+      cp.startClip('CLIPXZ');
+    });
+
+    Sandcastle.addToolbarButton('恢复到初始位置', function () {
+      if (cp)
+        cp.backToOriginPlane();
+    });
+
+    Sandcastle.addToolbarButton('在控制台中输出数据', function () {
+      if (cp)
+        console.log(cp.getData());
+    });
+
+    Sandcastle.addToolbarButton('取消', function () {
+      if (cp)
+        cp.cancel();
+    });
+
+  </script>
+</body>
+
+</html>

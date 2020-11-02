@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>创建三维环境</title>
+    <link rel="stylesheet" href="<%= VUE_APP_BASE_URL %>static/js/Freedo/freedo/Freedo/Widgets/widgets.css" />
+    <style>
+      *{
+        padding: 0;
+        margin: 0;
+      }
+      html,
+      body,
+      #freedoContainer{
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+      }
+        .cesium-viewer-toolbar {
+            left: 5px;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="freedoContainer" class="fullSize"></div>
+    <div id="loadingOverlay">
+        <h1>Loading...</h1>
+    </div>
+    <div id="toolbar"></div>
+    <script src="<%= VUE_APP_BASE_URL %>static/js/Freedo/freedo/Freedo/Freedo.js"></script>
+    <script src="<%= VUE_APP_BASE_URL %>static/js/Freedo/freedox/FreedoX/ThirdParty/1710_lodash/lodash.min.js"></script>
+    <script src="<%= VUE_APP_BASE_URL %>static/js/Freedo/freedox/FreedoX/FreedoX.js"></script>
+    <script src="<%= VUE_APP_BASE_URL %>static/js/turf.min.js"></script>
+    <script src="<%= VUE_APP_BASE_URL %>static/js/heatmap.min.js"></script>
+    <script src="<%= VUE_APP_BASE_URL %>static/js/Sandcastle-header.js"></script>
+    <script>
+        var viewer = Freedo.FdApp.createDefaultViewer('freedoContainer', {
+            homeButton: true // 是否展示Home按钮
+        }, {
+                hasProvinceBoundaries: true // 是否绘制中国省界
+            });
+
+        var opt = ['创建三维环境'];
+        Sandcastle.createTipsDOM(opt);
+
+        viewer.showLogo = true;
+
+        /*var obj = {
+            "url": "https://ftp.gbim360.com/zhengsicheng/bigdata190815/tileset.json",
+            "rateOfRadius": 1.0,
+            "maximumScreenSpaceError": 2048,
+            "maximumAbsoluteMemoryUsage": 1024,
+            "maximumMemoryUsage": 256,
+            "position": [
+                111,
+                33,
+                0
+            ],
+            "modelMatrix": [
+                -0.933561661115519,
+                -0.35841683121085843,
+                0,
+                0,
+                0.19520779708382577,
+                -0.5084541222369819,
+                0.8386705679454242,
+                0,
+                -0.30059364739280986,
+                0.7829506885398259,
+                0.5446390350150271,
+                0,
+                -1919133.8859139425,
+                4998732.376446005,
+                3453958.641177899,
+                1
+            ],
+            "transform": [
+                0,
+                0,
+                0
+            ],
+            "autoFlyto": false,
+            "pointColor": "",
+            "pointSize": 3,
+            "id": "f8637ae4-5525-4f40-a802-06851a7d8f4f",
+            "show": true,
+            "flytoOrGoto": false
+        };
+
+        var str = "";
+        var dis = 0.003;
+        for (var i = 0; i < dis * 31; i = i + dis) {
+            obj['position'][0] = 111 + i;
+            for (var j = 0; j < dis * 31; j = j + dis) {
+                obj['position'][1] = 33 + j;
+                obj['id'] = Freedo.createGuid();
+                var m = Freedo.Transforms.eastNorthUpToFixedFrame(Freedo.Cartesian3.fromDegrees(...obj['position']));
+                obj['modelMatrix'] = Freedo.Matrix4.toArray(m);
+                if(i === 0 && j === 0) {
+                    str = JSON.stringify(obj);
+                } else {
+                    str = str + ',' + JSON.stringify(obj);
+                }
+                
+            }
+        }
+
+        console.log(str);*/
+
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>框选放大</title>
+  <link rel="stylesheet" href="<%= VUE_APP_BASE_URL %>static/js/Freedo/freedo/Freedo/Widgets/widgets.css" />
+  <link rel="stylesheet" href="https://forweb.gbim360.com/latest/freedox/Examples/static/bucket.css">
+  <style>
+    * {
+      padding: 0;
+      margin: 0;
+    }
+
+    html,
+    body,
+    #freedoContainer {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+    }
+
+    .cesium-viewer-toolbar {
+      left: 5px;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="background-plane"></div>
+  <div id="freedoContainer" class="fullSize"></div>
+  <div id="loadingOverlay">
+    <h1>Loading...</h1>
+  </div>
+  <div id="toolbar"></div>
+
+
+  <script src="<%= VUE_APP_BASE_URL %>static/js/Freedo/freedo/Freedo/Freedo.js"></script>
+  <script src="<%= VUE_APP_BASE_URL %>static/js/Freedo/freedox/FreedoX/ThirdParty/1710_lodash/lodash.min.js"></script>
+  <script src="<%= VUE_APP_BASE_URL %>static/js/Freedo/freedox/FreedoX/FreedoX.js"></script>
+  <script src="<%= VUE_APP_BASE_URL %>static/js/turf.min.js"></script>
+  <script src="<%= VUE_APP_BASE_URL %>static/js/heatmap.min.js"></script>
+  <script src="<%= VUE_APP_BASE_URL %>static/js/Sandcastle-header.js"></script>
+  <script>
+    var viewer = Freedo.FdApp.createDefaultViewer('freedoContainer');
+    var imageryManager = new Freedo.FdTools.FdImageryLayersManager(viewer);
+    imageryManager.addDefaultImageryLayer();
+
+    let opt = ['框选放大：鼠标左键按下，拖拽(绘制矩形框)，鼠标左键弹起结束；', '结束后自动飞到框选区域，以框选区的中心点为中心。'];
+    Sandcastle.createTipsDOM(opt);
+
+    var zoomByRectangle = new Freedo.FdCamera.FdZoomByRectangle(viewer);
+
+    Sandcastle.addToolbarButton('框选放大', function () {
+      zoomByRectangle.start();
+    });
+  </script>
+</body>
+
+</html>

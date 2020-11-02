@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>路径动画</title>
+  <link rel="stylesheet" href="<%= VUE_APP_BASE_URL %>static/js/Freedo/freedo/Freedo/Widgets/widgets.css" />
+  <link rel="stylesheet" href="https://forweb.gbim360.com/latest/freedox/Examples/static/bucket.css">
+  <style>
+    * {
+      padding: 0;
+      margin: 0;
+      box-sizing: border-box;
+    }
+
+    #viewPoint {
+      position: absolute;
+      top: 60px;
+      left: 20px;
+    }
+
+    #viewPoint select {
+      height: 28px;
+      line-height: 28px;
+      font-size: 16px;
+      background-color: #303336;
+      border: none;
+      color: #edffff;
+      width: 200px;
+      text-align: center;
+    }
+
+    .view-point-container {
+      position: absolute;
+      left: 230px;
+      top: 0px;
+      background-color: #303336;
+    }
+
+    .view-point-list {
+      list-style: none;
+      color: #edffff;
+      height: 30px;
+      width: 300px;
+      line-height: 30px;
+      border-bottom: 1px solid #000;
+      padding: 0px 10px;
+      font-size: 13px;
+      cursor: pointer;
+    }
+
+    .view-point-list.active {
+      background-color: #ccc;
+      color: #000;
+    }
+
+    .view-point-delete {
+      float: right;
+      cursor: pointer;
+    }
+
+    .FD-buttom-footer {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+    }
+
+    .FD-buttom-tool {
+      text-align: center;
+    }
+
+    .FD-bar-icon {
+      width: 16px;
+      height: 16px;
+      line-height: 16px;
+      display: inline-block;
+      text-align: center;
+      color: #fff;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      margin-right: 10px;
+      cursor: pointer;
+      box-sizing: content-box;
+    }
+
+    .FD-bar-icon.spot {
+      background: #689f38;
+    }
+
+    .FD-bar-icon.gray {
+      background-color: rgba(255, 255, 255, 0.4);
+      cursor: default;
+    }
+
+    .FD-view-ul {
+      height: 88px;
+      margin-bottom: 10px;
+      /* display: flex; */
+      text-align: center;
+      flex-wrap: nowrap;
+      overflow-x: hidden;
+      overflow-y: hidden;
+      padding: 0 4px;
+    }
+
+    .FD-view-li {
+      margin: 0 6px;
+      height: 64px;
+      display: inline-block;
+    }
+
+    .FD-view-li img {
+      border: 2px solid #ccc;
+    }
+
+    .FD-view-li img.active {
+      border: 2px solid #70dc39;
+    }
+
+    .model-input {
+      display: inline-block;
+      position: fixed;
+      left: 600px;
+      top: 60px;
+    }
+
+    .model-input>input {
+      width: 300px;
+    }
+  </style>
+</head>
+
+<body>
+  <script src="https://forweb.gbim360.com/latest/freedo/Freedo/Freedo.js"></script>
+  <script src="https://forweb.gbim360.com/latest/freedox/FreedoX/FreedoX.js"></script>
+  <script src="https://forweb.gbim360.com/latest/freedox/FreedoX/ThirdParty/1710_lodash/lodash.min.js"></script>
+  <script src="https://forweb.gbim360.com/latest/freedox/Examples/static/Sandcastle-header.js"></script>
+  <script src="https://forweb.gbim360.com/latest/freedox/FreedoX/ThirdParty/1804_vue/vue.min.js"></script>
+
+  <div id="freedoContainer" class="fullSize"></div>
+  <div id="loadingOverlay">
+    <h1>Loading...</h1>
+  </div>
+  <div id="toolbar"></div>
+  <div id="viewPoint">
+    <select name="" id="" class="group-name-select" v-model="currentGroupName" v-show="groupIDs.length>0">
+      <option v-for="(item, index) in groupNames" :value="item">{{
+            item
+            }}</option>
+    </select>
+    <ul class="view-point-container" v-show="viewPoints">
+      <li class="view-point-list" v-for="(item, index) in viewPoints" @click="flyToViewPoint(currentGroupId,index)">
+        <span class="view-point-name">路径点{{ index + 1 }}: {{ item.name }}</span>
+        <span class="view-point-delete"><i class="fa fa-trash-o" @click.stop="deleteViewPoint(index)"></i></span>
+      </li>
+    </ul>
+  </div>
+  <div class="model-input">
+    <input value="../../sampleData/GroundVehicle.glb" type="text" id="modelUrl" />
+    <button onclick="addModel()">添加模型</button>
+    <button onclick="removeModel()">清除模型</button>
+  </div>
+  
+
+
+  <script>
+    var viewer = Freedo.FdApp.createDefaultViewer('freedoContainer');
+    var pathsManager = new Freedo.FdMicroApp.FdPathsManager(viewer, {}, 3);
+
+    var currentGroupId;
+    var needSave = false;
+    pathsManager.setSpeed(10.0);
+    pathsManager.setLoop(false);
+    pathsManager.setKBStatus(true);
+    pathsManager.setSmoothRate(0.3); //平滑度，0-1之间，默认0.5，越大越平滑
+    pathsManager.setNearRate(4);
+    pathsManager.setHeight(50);
+    pathsManager.setHeading(0);
+    // pathsManager.setPitch(30);
+    //设置高度偏移，就是在实际拾取到的点的高度的基础上增加一个值
+    pathsManager.setOffsetH(1);
+
+    //如果设置的是非路径视角，则setHeight不可以设置为0
+    pathsManager.setPathViewMode(true);
+
+    pathsManager.setPathShow(true);
+
+    function loadPaths() {
+      if (viewPointUI.groupIDs.length >= 1) {
+        viewPointUI.currentGroupId = viewPointUI.groupIDs[0];
+        viewPointUI.currentGroupName = viewPointUI.groupNames[0];
+      } else viewPointUI.currentGroupId = undefined;
+    }
+
+    pathsManager.on((eventType, params) => {
+      if (eventType == 'GroupChanged') {
+        var groupOpt = pathsManager.getGroupOptions(params);
+        viewPointUI.viewPoints = groupOpt.list;
+        needSave = true;
+      }
+
+      if (eventType == 'GroupsChanged') {
+        viewPointUI.groupIDs = pathsManager.getAllGroupIDs();
+        setTimeout('loadPaths()', 300);
+        needSave = true;
+      }
+
+      if (eventType == 'DataChanged') {
+        //console.log(params);
+        needSave = true;
+      }
+
+      if (eventType == 'KeyPress') {
+        //console.log(params);
+      }
+    });
+
+    Sandcastle.addToolbarButton('增加路径', function () {
+      currentGroupId = pathsManager.createGroup(
+        'Group_' + new Date().getTime()
+      );
+      viewPointUI.groupIDs = pathsManager.getAllGroupIDs();
+      viewPointUI.currentGroupId = currentGroupId;
+      viewPointUI.currentGroupName = pathsManager.getGroupName(
+        currentGroupId
+      );
+      //let opt = ['请在地球上单击选点'];
+      //Sandcastle.createTipsDOM(opt);
+      pathsManager.preAppendPathPoint();
+    });
+
+    Sandcastle.addToolbarButton('增加路径点', function () {
+      pathsManager.preAppendPathPoint();
+    });
+
+    Sandcastle.addToolbarButton('播放', function () {
+      pathsManager.setCurrentGroupID(currentGroupId);
+      pathsManager.start();
+    });
+
+    Sandcastle.addToolbarButton('暂停', function () {
+      pathsManager.pause();
+    });
+
+    Sandcastle.addToolbarButton('停止', function () {
+      pathsManager.stop();
+    });
+
+    Sandcastle.addToolbarButton('删除当前路径', function () {
+      pathsManager.removeGroup(currentGroupId);
+    });
+
+    Sandcastle.addToolbarButton('显示路径', function () {
+      pathsManager.setPathShow(true);
+    });
+
+    Sandcastle.addToolbarButton('隐藏路径', function () {
+      pathsManager.setPathShow(false);
+    });
+
+    Sandcastle.addToolbarButton('编辑当前路径', function () {
+      pathsManager.startEdit(currentGroupId);
+      pathsManager.setPathShow(false);
+    });
+
+    Sandcastle.addToolbarButton('编辑上一个节点', function () {
+      pathsManager.editPre();
+    });
+
+    Sandcastle.addToolbarButton('编辑下一个节点', function () {
+      pathsManager.editNext();
+    });
+
+    Sandcastle.addToolbarButton('退出编辑', function () {
+      pathsManager.endEdit();
+      pathsManager.setPathShow(true);
+    });
+
+    Sandcastle.addToolbarButton('清空', function () {
+      var groupIDs = pathsManager.getAllGroupIDs();
+      for (var k in groupIDs) pathsManager.removeGroup(groupIDs[k]);
+    });
+
+    Sandcastle.addToolbarButton('在控制台中输出数据', function () {
+      console.log(pathsManager.getData());
+    });
+
+    var imgMGR = new Freedo.FdTools.FdImageryLayersManager(viewer);
+    imgMGR.addDefaultImageryLayer();
+
+    var viewPointUI = new Vue({
+      el: '#viewPoint',
+      data: {
+        groupIDs: [],
+        groupNames: [],
+        currentGroupId: '',
+        viewPoints: [],
+        currentGroupName: ''
+      },
+      methods: {
+        deleteViewPoint: function (index) {
+          pathsManager.removePathPoint(
+            this.currentGroupId,
+            index
+          );
+        },
+        flyToViewPoint: function (id, index) {
+          pathsManager.flyTo(id, index);
+        }
+      },
+      created: function () { },
+      watch: {
+        groupIDs(newValue) {
+          this.groupNames = [];
+          newValue.forEach(ele => {
+            this.groupNames.push(
+              pathsManager.getGroupName(ele)
+            );
+          });
+        },
+        currentGroupId(newGroupId) {
+          currentGroupId = newGroupId;
+
+          pathsManager.setCurrentGroupID(newGroupId);
+
+          this.viewPoints.splice(0, this.viewPoints.length);
+          if (!Freedo.defined(newGroupId)) return;
+
+          let length = pathsManager.getPathsLength(newGroupId);
+          for (var i = 0; i < length; ++i) {
+            var vpo = pathsManager.getPathPoint(newGroupId, i);
+            this.viewPoints.push({
+              index: i,
+              name: vpo.name
+            });
+          }
+        },
+        currentGroupName(newValue) {
+          let index = this.groupNames.indexOf(newValue);
+          this.currentGroupId = this.groupIDs[index];
+        }
+      }
+    });
+
+    function writeToLocalStorage(prop, data) {
+      if (!Freedo.defined(data)) {
+        localStorage.removeItem(prop);
+      } else {
+        console.log(JSON.stringify(data));
+        localStorage[prop] = JSON.stringify(data);
+      }
+    }
+
+    function readFromLocalStorage(prop) {
+      let rawData;
+      if (typeof localStorage[prop] !== 'undefined') {
+        try {
+          rawData = JSON.parse(localStorage[prop]);
+        } catch (error) {
+          console.log(error);
+        }
+      }
+
+      return rawData;
+    }
+
+    function save() {
+      if (needSave) {
+        writeToLocalStorage(
+          'pathsOptions',
+          pathsManager.pathsOptions
+        );
+        needSave = false;
+      } else {
+      }
+    }
+
+    function read() {
+      // 从localStorage中读取配置文件
+      let rawData = readFromLocalStorage('pathsOptions');
+      pathsManager.pathsOptions = rawData;
+      viewPointUI.groupIDs = pathsManager.getAllGroupIDs();
+      setTimeout('loadPaths()', 100);
+    }
+
+    setTimeout('read()', 1000);
+    setInterval('save()', 1000);
+
+    let opt = ['PageUp和PageDown按键可以手动控制前进后退'];
+    Sandcastle.createTipsDOM(opt);
+
+    /* const pmtsManager = new Freedo.FdTools.FdPMTSManager(viewer);
+    pmtsManager.add({
+        url:
+            'https://cfgateway.ifreedo.cn/freeserver-pmts/services/share/2d1a6e91e40748c298620737cd55bf7b/pmts/1.1.0/PMTSCapabilities.json?accesskey=0712862ee4fb4de5b9ab62d6f8b00956',
+        maximumMemoryUsage: 1
+    }); */
+
+    function addModel() {
+      let url = document.getElementById('modelUrl').value;
+      if (url == '') url = undefined;
+      pathsManager.setModel(url);
+    }
+
+    function removeModel() {
+      pathsManager.setModel();
+    }
+  </script>
+</body>
+
+</html>

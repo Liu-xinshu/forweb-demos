@@ -3,66 +3,10 @@
     width: 99.9% !important;
     overflow: hidden;
 }
-.el-table--scrollable-x .el-table__body-wrapper {
+// 滚动条样式--------------------------------------scrollBar----------------------------------------------
+.el-scrollbar {
+    height: 100%;
+}
+.el-scrollbar__wrap {
     overflow-x: hidden;
-}
-.el-table {
-    background: transparent;
-    color: rgba(255, 255, 255, 1);
-    tr {
-        background: transparent;
-    }
-}
-.el-table__header tr,
-.el-table__header th {
-    padding: 0;
-    height: 40px;
-}
-.el-table td,
-th {
-    // 去除边框s
-    border: 0;
-    width: 25%;
-    text-align: center;
-}
-.el-table th,
-.el-table tr {
-    border: 0;
-    background: transparent;
-}
-.el-table tbody tr {
-    background: transparent;
-}
-.el-table tbody tr:nth-child(odd) {
-    background: rgba(22, 34, 31, 0.1);
-}
-.el-table tbody tr:nth-child(even) {
-    background: rgba(156, 198, 255,.3);
-}
-.el-table tbody tr:hover {
-    // background: rgba(156, 198, 255,.3);
-}
-.el-table .cell {
-    // overflow: visible;
-    // white-space: nowrap;
-    overflow: hidden;
-}
-.el-table--enable-row-hover .el-table__body tr:hover > td {
-    background-color: transparent;
-}
-.el-table thead th {
-    color: rgba(255, 255, 255, 1) !important;
-    background: rgba(156, 198, 255,.3);
-}
-.el-table--striped .el-table__body tr.el-table__row--striped td{
-    background: transparent;
-}
-.el-table::before {
-    display: none;
-}
-.el-pagination__total {
-    color: rgba(255, 255, 255, 1);
-}
-.el-pagination__jump {
-    color: rgba(255, 255, 255, 1);
 }

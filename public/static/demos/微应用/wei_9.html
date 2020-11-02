@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>地质模拟</title>
+  <link rel="stylesheet" href="<%= VUE_APP_BASE_URL %>static/js/Freedo/freedo/Freedo/Widgets/widgets.css" />
+  <link rel="stylesheet" href="https://forweb.gbim360.com/latest/freedox/Examples/static/bucket.css">
+</head>
+
+<body>
+
+  <div id="freedoContainer" class="fullSize"></div>
+  <div id="loadingOverlay">
+    <h1>Loading...</h1>
+  </div>
+  <div id="toolbar"></div>
+
+  <script src="https://forweb.gbim360.com/latest/freedo/Freedo/Freedo.js"></script>
+  <script src="https://forweb.gbim360.com/latest/freedox/FreedoX/FreedoX.js"></script>
+  <script src="https://forweb.gbim360.com/latest/freedox/FreedoX/ThirdParty/1710_lodash/lodash.min.js"></script>
+  <script src="https://forweb.gbim360.com/latest/freedox/Examples/static/Sandcastle-header.js"></script>
+  <script>
+    var viewer = Freedo.FdApp.createDefaultViewer('freedoContainer');
+
+    let opt = ['‘开始选点’开启鼠标选点，左键单击选点，右键单击结束并完成本次地质模拟选点。结束后可重复上面步骤继续选点',
+      '‘退出选点’退出对鼠标的控制，恢复到鼠标漫游交互操作',
+      '‘清空地质模拟’清空已生成的地质模拟',
+      '生成的地质模拟可以被缓存下来，刷新页面可以恢复'
+    ];
+    Sandcastle.createTipsDOM(opt);
+
+    var imageryManager = new Freedo.FdTools.FdImageryLayersManager(viewer);
+    imageryManager.addDefaultImageryLayer();
+
+    viewer.terrainProvider = new Freedo.FreedoTerrainProvider({
+      url: '//terrain.gbim360.com/'
+    });
+
+    var scene = viewer.scene;
+
+    Freedo.FdCamera.flyToByCameraInfo(scene.camera, [Freedo.Math.toDegrees(2.0302916011491243), Freedo.Math.toDegrees(0.4873753203202588), 5000, -30, -90, 0]);
+
+    var needUpdateLocalStorage = true;
+
+    // 从localStorage中读取配置文件
+    let rawData = readFromLocalStorage();
+
+    var geologySimulationManager;
+    var geologySimulationHandle;
+    Freedo.Resource.fetchJson('https://forweb.gbim360.com/latest/sampleData/GeologySimulation/drills.json').then(function (jsonData) {
+      geologySimulationManager = new Freedo.FdTools.FdGeologySimulationManager(scene, jsonData);
+      geologySimulationHandle = new Freedo.FdMicroApp.FdGeologySimulationHandler(viewer, geologySimulationManager);
+
+      geologySimulationManager.on(function (eventType, param) {
+        if (eventType === 'dataAdded') {
+          console.log('添加一个地质模拟项');
+
+          var geologyObject = param;
+
+          // var pointsArray = geologyObject.points; // 输入的地质模拟多边形的顶点数组
+          // var erasePrimitive = geologyObject.erasePritive; //地形挖洞的对象
+          // var geologyPrimitives = geologyObject.geologyPrimitives; //添加的地质面对象数组
+
+          if (needUpdateLocalStorage) {
+            writeToLocalStorage(geologySimulationManager.drillOptions);
+          }
+        } else if (eventType === 'dataRemoved') {
+          console.log('清空所有的地质模拟项');
+          writeToLocalStorage();
+        }
+      });
+
+      geologySimulationHandle.on(function (eventType, param) {
+        if (eventType === 'start') {
+          console.log('开始地质模拟选点');
+        } else if (eventType === 'cancel') {
+          console.log('退出地质模拟选点');
+        } else if (eventType === 'dispose') {
+          console.log('地质模拟选点操作器被销毁');
+        } else if (eventType === 'dataChanged') {
+          console.log('完成一个地质模拟选点，并生成地质模拟对象。');
+          var geologyObject = param;
+          //or
+          //var geologyObjectArray = geologySimulationHandle.getData();
+          //var geologyObject = geologyObjectArray[geologyObjectArray.length-1];
+
+          // var pointsArray = geologyObject.points; // 输入的地质模拟多边形的顶点数组
+          // var erasePrimitive = geologyObject.erasePritive; //地形挖洞的对象
+          // var geologyPrimitives = geologyObject.geologyPrimitives; //添加的地质面对象数组
+        }
+      });
+
+      if (typeof rawData !== 'undefined') {
+        var geologySimulationOption = rawData;
+
+        needUpdateLocalStorage = false;
+        for (var optionName in geologySimulationOption) {
+          var geologySimulationOpt = geologySimulationOption[optionName];
+          geologySimulationManager.addGeologySimulation(geologySimulationOpt.points,
+            geologySimulationOpt.maxStep,
+            geologySimulationOpt.tileS,
+            geologySimulationOpt.tileT,
+            geologySimulationOpt.flipUp,
+            geologySimulationOpt.buildBottom);
+        }
+        needUpdateLocalStorage = true;
+      }
+
+    }).otherwise(function (error) {
+      console.log('Load drills file failed.' + error);
+    });
+
+    Sandcastle.addToolbarButton('开始地质模拟选点', function () {
+      if (Freedo.defined(geologySimulationHandle)) {
+        geologySimulationHandle.start();
+      }
+    });
+
+    Sandcastle.addToolbarButton('退出地质模拟选点', function () {
+      if (Freedo.defined(geologySimulationHandle)) {
+        geologySimulationHandle.reset();
+      }
+    });
+
+    Sandcastle.addToolbarButton('清空地质模拟', function () {
+      if (Freedo.defined(geologySimulationManager)) {
+        geologySimulationManager.removeAllGeologySimulations();
+      }
+    });
+
+
+    function writeToLocalStorage(geologySimulationOption) {
+      if (!Freedo.defined(geologySimulationOption)) {
+        localStorage.removeItem('geologySimulationOption');
+      } else {
+        localStorage.geologySimulationOption = JSON.stringify(geologySimulationOption);
+      }
+    }
+
+    function readFromLocalStorage() {
+      let rawData;
+      if (typeof localStorage.geologySimulationOption !== 'undefined') {
+        try {
+          rawData = JSON.parse(localStorage.geologySimulationOption);
+        } catch (error) {
+          console.log(error);
+        }
+      }
+
+      return rawData;
+    }
+  </script>
+</body>
+
+</html>

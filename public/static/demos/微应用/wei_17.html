@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>PModel模型编辑</title>
+  <link rel="stylesheet" href="<%= VUE_APP_BASE_URL %>static/js/Freedo/freedo/Freedo/Widgets/widgets.css" />
+  <link rel="stylesheet" href="https://forweb.gbim360.com/latest/freedox/Examples/static/bucket.css">
+</head>
+
+<body>
+
+
+  <div id="freedoContainer" class="fullSize"></div>
+  <div id="loadingOverlay">
+    <h1>Loading...</h1>
+  </div>
+  <div id="toolbar"></div>
+
+  <script src="<%= VUE_APP_BASE_URL %>static/js/Freedo/freedo/Freedo/Freedo.js"></script>
+  <script src="<%= VUE_APP_BASE_URL %>static/js/Freedo/freedox/FreedoX/ThirdParty/1710_lodash/lodash.min.js"></script>
+  <script src="<%= VUE_APP_BASE_URL %>static/js/Freedo/freedox/FreedoX/FreedoX.js"></script>
+  <script src="<%= VUE_APP_BASE_URL %>static/js/Sandcastle-header.js"></script>
+
+  <script>
+    var viewer = Freedo.FdApp.createDefaultViewer('freedoContainer');
+    var data = undefined;
+
+    ////////////////////////////////////////////////////////////////////////////////////////////
+    var pmtsManager = new Freedo.FdTools.FdPMTSManager(viewer);
+    var url =
+      'https://cfgateway.gbim360.cn/freeserver-pmts/services/share/0ab675ef-72de-4b52-ae0a-96dae76a95b4/pmts/1.1.0/PMTSCapabilities.json?accesskey=a748d6c5-16c5-40af-95d6-cdb2ffa4cb64';
+
+    //指定数据的位置，如果数据本身没有带位置
+    var pos = Freedo.Cartesian3.fromDegrees(116, 40, -15);
+    var modelMatrix = Freedo.Transforms.eastNorthUpToFixedFrame(pos);
+
+    var pmtsID = pmtsManager.add({
+      id: 'wenhuashi',
+      url: url,
+      modelMatrix: modelMatrix, //如果数据本身已经带了坐标则不需要指定本参数
+      flytoOrGoto: true //是否跳入到PMTS数据，true为跳入，false为飞入，默认飞入
+    }, undefined);
+
+    //加载完成后得到PModel
+    var tileset;
+    pmtsManager.on(function (en, ev) {
+      if (en == 'PModelLoaded') {
+        //pmtsManager.getPmts(pmtsID).pModelInfos变量存放了该PMTS服务中包含的所有数据信息
+        //可以遍历pModelInfos得到全部的PModel
+        tileset = pmtsManager.getPmts(pmtsID).pModelInfos[0].pModel;
+
+        GotoHouse();
+        if (data && data['modelMatrix'])
+          tileset.modelMatrix = data['modelMatrix'];
+        trackManager.cancelTrack();
+      }
+    });
+    ////////////////////////////////////////////////////////////////////////////////////////////
+
+    // var tileset = viewer.scene.primitives.add(new Freedo.FreedoPModelset({
+    //     url: '../../sampleData/文化室2018z'
+    // }));
+
+    var imageryManager = new Freedo.FdTools.FdImageryLayersManager(viewer);
+    imageryManager.addDefaultImageryLayer();
+
+    var trackManager = new Freedo.FdCamera.FdTrackManager(viewer.scene);
+
+    var th = new Freedo.FdMicroApp.FdTransformHelper(viewer);
+    th.on(function (eventType, eventArg) {
+      if (eventType == "DataChanged") {
+        data = th.tranOptions;
+      }
+
+      //监控这个时间可以得到模型编辑之后的最新modelMatrix
+      //然后在数据加载的时候指定这个modelMatrix就可以了
+      if (eventType == "TransformedMatrix") {
+        //console.log(eventArg);
+      }
+    })
+
+    function GotoHouse() {
+      viewer.camera.viewBoundingSphere(tileset.boundingSphere, new Freedo.HeadingPitchRange(0, -0.5, 0));
+      viewer.camera.lookAtTransform(Freedo.Matrix4.IDENTITY);
+      trackManager.cancelTrack();
+    }
+
+    // tileset.readyPromise.then(function (tileset) {
+    //     GotoHouse();
+
+    //     if (data && data['modelMatrix'])
+    //         tileset.modelMatrix = data['modelMatrix'];
+    //     trackManager.cancelTrack();
+    // });
+
+    Sandcastle.addToolbarButton('平移旋转缩放', function () {
+      GotoHouse();
+      th.cancel();
+      th.setData([tileset]);
+      th.start("MOVE|ROTATE|SCALE");
+    });
+
+    Sandcastle.addToolbarButton('平移', function () {
+      GotoHouse();
+      th.cancel();
+      th.setData([tileset]);
+      th.start("MOVE");
+    });
+
+    Sandcastle.addToolbarButton('旋转', function () {
+      GotoHouse();
+      th.cancel();
+      th.setData([tileset]);
+      th.start("ROTATE");
+    });
+
+    Sandcastle.addToolbarButton('缩放', function () {
+      GotoHouse();
+      th.cancel();
+      th.setData([tileset]);
+      th.start("SCALE");
+    });
+
+    Sandcastle.addToolbarButton('重置', function () {
+      th.resetTransform();
+    });
+
+    Sandcastle.addToolbarButton('取消', function () {
+      th.cancel();
+    });
+
+    Sandcastle.addToolbarButton('在控制台中输出数据', function () {
+      console.log(th.getData());
+    });
+
+  </script>
+</body>
+
+</html>

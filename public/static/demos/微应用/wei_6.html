@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>地形挖洞</title>
+  <link rel="stylesheet" href="<%= VUE_APP_BASE_URL %>static/js/Freedo/freedo/Freedo/Widgets/widgets.css" />
+  <link rel="stylesheet" href="https://forweb.gbim360.com/latest/freedox/Examples/static/bucket.css">
+  <style>
+    .fd-select-container {
+      position: absolute;
+      top: 30px;
+      left: 18px;
+    }
+
+    .fd-select-top {
+      height: 30px;
+      line-height: 30px;
+      font-size: 14px;
+      color: #edffff;
+      text-shadow: 1px 1px 1px #000;
+      margin-bottom: 3px;
+    }
+  </style>
+</head>
+</head>
+
+<body>
+  <div id="freedoContainer" class="fullSize"></div>
+  <div id="loadingOverlay">
+    <h1>Loading...</h1>
+  </div>
+  <div id="toolbar"></div>
+  <div class="fd-select-container">
+    <div>
+      <p class="fd-select-top">选择挖洞颜色</p>
+    </div>
+    <div class="color-picker">
+      <input type="color" id="changeColor">
+      <label for="changeColor" id="labelColor"></label>
+    </div>
+  </div>
+
+  <script src="https://forweb.gbim360.com/latest/freedo/Freedo/Freedo.js"></script>
+  <script src="https://forweb.gbim360.com/latest/freedox/FreedoX/FreedoX.js"></script>
+  <script src="https://forweb.gbim360.com/latest/freedox/FreedoX/ThirdParty/1710_lodash/lodash.min.js"></script>
+  <script src="https://forweb.gbim360.com/latest/freedox/Examples/static/Sandcastle-header.js"></script>
+
+  <script>
+    var viewer = Freedo.FdApp.createDefaultViewer('freedoContainer');
+
+    let opt = ['‘开始挖洞’开启鼠标选点，左键单击选点，右键单击结束并完成本次地形挖洞。结束后可重复上面步骤继续挖洞',
+      '‘退出挖洞’退出对鼠标的控制，恢复到鼠标漫游交互操作',
+      '‘清空地形挖洞’删除已经在地形上挖的所有洞',
+      '生成的地形挖洞，可以被缓存下来，刷新页面可以恢复。'
+    ];
+    Sandcastle.createTipsDOM(opt);
+
+    var imageryManager = new Freedo.FdTools.FdImageryLayersManager(viewer);
+    imageryManager.addDefaultImageryLayer();
+
+    viewer.terrainProvider = new Freedo.FreedoTerrainProvider({
+      url: '//terrain.gbim360.com/'
+    });
+
+    var eraseGroundColor = [0.0, 0.0, 0.0, 1.0];
+    var fdColor = document.getElementById('changeColor');
+    var labelColor = document.getElementById('labelColor');
+    fdColor.onchange = function () {
+      let selectColor = Freedo.Color.fromCssColorString(this.value);
+      eraseGroundColor[0] = selectColor.red;
+      eraseGroundColor[1] = selectColor.green;
+      eraseGroundColor[2] = selectColor.blue;
+      eraseGroundColor[3] = selectColor.alpha;
+
+      //eraseGroudManager.holeColor = eraseGroundColor;
+      labelColor.style.background = this.value;
+    }
+    Freedo.FdCamera.flyToByCameraInfo(viewer.scene.camera, [Freedo.Math.toDegrees(2.0302916011491243), Freedo.Math.toDegrees(0.4873753203202588), 5000, -30, -90, 0]);
+
+    var eraseGroudManager = new Freedo.FdTools.FdEraseGroundManager(viewer);
+    var eraseGroudHandler = new Freedo.FdMicroApp.FdEraseGroundHandler(viewer, eraseGroudManager);
+
+    var boxes = [];
+
+    function addPModel(pointsArray) {
+      var boundingSphere = Freedo.BoundingSphere.fromPoints(pointsArray);
+      var modelMatrix = Freedo.Transforms.eastNorthUpToFixedFrame(boundingSphere.center);
+
+      var box = viewer.scene.primitives.add(Freedo.Model.fromGltf({
+        url: 'https://forweb.gbim360.com/latest/sampleData/UnitBox.gltf',
+        show: true, // default
+        modelMatrix: modelMatrix,
+        scale: boundingSphere.radius * 0.5
+      }));
+
+      viewer.scene.requestRender();
+      boxes.push(box);
+    }
+
+    Sandcastle.addToolbarButton('开始挖洞', function () {
+      eraseGroudHandler.start(eraseGroundColor);
+    });
+
+    Sandcastle.addToolbarButton('退出挖洞', function () {
+      eraseGroudHandler.cancel();
+    });
+
+    Sandcastle.addToolbarButton('清空地形挖洞', function () {
+      eraseGroudHandler.dispose();
+      eraseGroudManager.dispose();
+    });
+
+    var needUpdateLocalStorage = true;
+    eraseGroudManager.on(function (eventType, param) {
+      if (eventType === 'dataAdded') {
+        console.log('添加一个地形挖洞项');
+        var eraseGroundObject = param;
+
+        var pointsArray = eraseGroundObject.points; // 输入的地形挖洞多边形的顶点数组
+        var erasePrimitive = eraseGroundObject.color; //洞的颜色
+        var geologyPrimitives = eraseGroundObject.erasePrimitive; //地形挖洞的对象
+
+        addPModel(pointsArray);
+
+        if (needUpdateLocalStorage) {
+          writeToLocalStorage(eraseGroudManager.eraseGroudOptions);
+        }
+      } else if (eventType === 'dataRemoved') {
+        console.log('清空所有的地形挖洞项');
+        for (var key in boxes) {
+          viewer.scene.primitives.remove(boxes[key]);
+        }
+        viewer.scene.requestRender();
+        writeToLocalStorage(eraseGroudManager.eraseGroudOptions);
+      }
+    });
+
+    eraseGroudHandler.on(function (eventType, param) {
+      if (eventType === 'start') {
+        console.log('开始地形挖洞选点');
+      } else if (eventType === 'cancel') {
+        console.log('退出地形挖洞选点');
+      } else if (eventType === 'dispose') {
+        console.log('地形挖洞选点操作器被销毁');
+      } else if (eventType === 'dataChanged') {
+        console.log('完成一个地形挖洞选点，并生成地形挖洞对象。');
+        var eraseGroundObject = param;
+        //or
+        //var eraseGroundObjectArray = eraseGroudHandler.getData();
+        //var eraseGroundObject = eraseGroundObjectArray[eraseGroundObjectArray.length-1];
+        var pointsArray = eraseGroundObject.points; // 输入的地形挖洞多边形的顶点数组
+        var erasePrimitive = eraseGroundObject.color; //洞的颜色
+        var geologyPrimitives = eraseGroundObject.erasePrimitive; //地形挖洞的对象
+      }
+    });
+
+    function writeToLocalStorage(eraseGroudOption) {
+      if (!Freedo.defined(eraseGroudOption)) {
+        localStorage.removeItem('eraseGroudOption');
+      } else {
+        localStorage.eraseGroudOption = JSON.stringify(eraseGroudOption);
+      }
+    }
+
+    function readFromLocalStorage() {
+      let rawData;
+      if (typeof localStorage.eraseGroudOption !== 'undefined') {
+        try {
+          rawData = JSON.parse(localStorage.eraseGroudOption);
+        } catch (error) {
+          console.log(error);
+        }
+      }
+
+      return rawData;
+    }
+
+    // 从localStorage中读取配置文件
+    let rawData = readFromLocalStorage();
+    if (typeof rawData !== 'undefined') {
+      var eraseGroudOption = rawData;
+
+      needUpdateLocalStorage = false;
+      for (var optionName in eraseGroudOption) {
+        var eraseOption = eraseGroudOption[optionName];
+        eraseGroudManager.eraseGroudByPointsArray(eraseOption.points, eraseOption.color);
+      }
+      needUpdateLocalStorage = true;
+    }
+  </script>
+
+</body>
+
+</html>

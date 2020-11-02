@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>进度追踪</title>
+  <link rel="stylesheet" href="<%= VUE_APP_BASE_URL %>static/js/Freedo/freedo/Freedo/Widgets/widgets.css" />
+  <link rel="stylesheet" href="https://forweb.gbim360.com/latest/freedox/Examples/static/bucket.css">
+</head>
+
+<body>
+
+  <div id="freedoContainer" class="fullSize"></div>
+  <div id="loadingOverlay">
+    <h1>Loading...</h1>
+  </div>
+  <div id="toolbar"></div>
+
+  <script src="<%= VUE_APP_BASE_URL %>static/js/Freedo/freedo/Freedo/Freedo.js"></script>
+  <script src="<%= VUE_APP_BASE_URL %>static/js/Freedo/freedox/FreedoX/ThirdParty/1710_lodash/lodash.min.js"></script>
+  <script src="<%= VUE_APP_BASE_URL %>static/js/Freedo/freedox/FreedoX/FreedoX.js"></script>
+  <script src="<%= VUE_APP_BASE_URL %>static/js/Sandcastle-header.js"></script>
+  <script src="https://forweb.gbim360.com/latest/freedox/Examples/static/task.js"></script>
+
+  <script>
+    var viewer = Freedo.FdApp.createDefaultViewer('freedoContainer');
+    var imageryLayer = new Freedo.FdTools.FdImageryLayersManager(viewer);
+    imageryLayer.addDefaultImageryLayer();
+
+    const pd = new Freedo.FdMicroApp.FdProcessDiff(viewer, ggTaskData, "https://forweb.gbim360.com/latest/sampleData/%E7%95%8C%E7%89%8C%E8%88%B9%E9%97%B8/tileset.json");
+    pd.readyPromise.then(e => {
+      const bss = e._PModelSet.map(e => e.boundingSphere);
+      viewer.camera.flyToBoundingSphere(Freedo.BoundingSphere.fromBoundingSpheres(bss));
+    });
+
+    Sandcastle.addToolbarButton('2018-12-15', function () {
+      pd.time = "20181215";
+    });
+    Sandcastle.addToolbarButton('2018-12-25', function () {
+      pd.time = "20181225";
+    });
+    Sandcastle.addToolbarButton('2019-01-03', function () {
+      pd.time = "20190103";
+    });
+    Sandcastle.addToolbarButton('2019-01-15', function () {
+      pd.time = "20190115";
+    });
+    Sandcastle.addToolbarButton('2019-01-25', function () {
+      pd.time = "20190125";
+    });
+
+    Sandcastle.addToolbarButton('只显示第三个任务', function () {
+      pd.showTasks = ggTaskData.tasks[2];
+    });
+
+    Sandcastle.addToolbarButton('重置', function () {
+      pd.reset();
+    });
+
+  </script>
+</body>
+
+</html>

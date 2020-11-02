@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>相机飞入或跳入</title>
+  <link rel="stylesheet" href="<%= VUE_APP_BASE_URL %>static/js/Freedo/freedo/Freedo/Widgets/widgets.css" />
+  <link rel="stylesheet" href="https://forweb.gbim360.com/latest/freedox/Examples/static/bucket.css">
+  <style>
+    * {
+      padding: 0;
+      margin: 0;
+    }
+
+    html,
+    body,
+    #freedoContainer {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+    }
+
+    .cesium-viewer-toolbar {
+      left: 5px;
+    }
+  </style>
+
+</head>
+
+<body>
+  <div class="background-plane"></div>
+  <div id="freedoContainer" class="fullSize"></div>
+  <div id="loadingOverlay">
+    <h1>Loading...</h1>
+  </div>
+  <div id="toolbar"></div>
+
+
+
+  <script src="<%= VUE_APP_BASE_URL %>static/js/Freedo/freedo/Freedo/Freedo.js"></script>
+  <script src="<%= VUE_APP_BASE_URL %>static/js/Freedo/freedox/FreedoX/ThirdParty/1710_lodash/lodash.min.js"></script>
+  <script src="<%= VUE_APP_BASE_URL %>static/js/Freedo/freedox/FreedoX/FreedoX.js"></script>
+  <script src="<%= VUE_APP_BASE_URL %>static/js/turf.min.js"></script>
+  <script src="<%= VUE_APP_BASE_URL %>static/js/heatmap.min.js"></script>
+  <script src="<%= VUE_APP_BASE_URL %>static/js/Sandcastle-header.js"></script>
+  <script src="https://cdn.staticfile.org/vue/2.2.2/vue.min.js"></script>
+  <script>
+    var viewer = Freedo.FdApp.createDefaultViewer('freedoContainer', undefined, {
+      showMouseCenterIcon: true
+    });
+    let imageryManager = new Freedo.FdTools.FdImageryLayersManager(viewer);
+
+    imageryManager.addDefaultImageryLayer();
+
+    ////////////////////////////////////////////////////////////////////////////////////////////
+    var pmtsManager = new Freedo.FdTools.FdPMTSManager(viewer);
+    var url = 'https://cfgateway.gbim360.cn/freeserver-pmts/services/share/0ab675ef-72de-4b52-ae0a-96dae76a95b4/pmts/1.1.0/PMTSCapabilities.json?accesskey=a748d6c5-16c5-40af-95d6-cdb2ffa4cb64';
+
+    //指定数据的位置，如果数据本身没有带位置
+    var pos = Freedo.Cartesian3.fromDegrees(116, 40, -15);
+    var modelMatrix = Freedo.Transforms.eastNorthUpToFixedFrame(pos);
+
+    var pmtsID = pmtsManager.add({
+      id: 'wenhuashi',
+      url: url,
+      modelMatrix: modelMatrix, //如果数据本身已经带了坐标则不需要指定本参数
+      //flytoOrGoto: true //是否跳入到PMTS数据，true为跳入，false为飞入，默认飞入
+      autoFlyto: false //是否执行加载完后的自动飞入或跳入，false不执行，默认执行
+    }, undefined);
+
+    //加载完成后得到PModel
+    var pModel;
+    pmtsManager.on(function (en, ev) {
+      if (en == 'PModelLoaded') {
+        //pmtsManager.getPmts(pmtsID).pModelInfos变量存放了该PMTS服务中包含的所有数据信息
+        //可以遍历pModelInfos得到全部的PModel
+        pModel = pmtsManager.getPmts(pmtsID).pModelInfos[0].pModel;
+      }
+    });
+    ////////////////////////////////////////////////////////////////////////////////////////////
+
+    // var pModel = viewer.scene.primitives.add(new Freedo.FreedoPModelset({
+    //     url: '../../sampleData/文化室2018z'
+    // }));
+
+    let opt = ['‘飞入’从当前位置到目标位置有一个‘飞’的过程', '‘跳入’直接将相机从当前位置移到目标位置', '‘飞入(经纬度)’保持当前相机的角度进行飞入操作', '‘跳入(经纬度)’保持当前相机的角度进行跳入操作'];
+    Sandcastle.createTipsDOM(opt);
+
+    var cameraInfo = [116.00062800292072, 39.99960186133556, 51.09683310634617, 0, -30, 0];
+    var position = [116.00062800292072, 39.99960186133556, 51.09683310634617];
+
+    Sandcastle.addToolbarButton('飞入', function () {
+      Freedo.FdCamera.flyToByCameraInfo(viewer.scene.camera, cameraInfo);
+    });
+
+    Sandcastle.addToolbarButton('跳入', function () {
+      Freedo.FdCamera.goToByCameraInfo(viewer.scene.camera, cameraInfo);
+    });
+
+    Sandcastle.addToolbarButton('飞入(经纬度)', function () {
+      Freedo.FdCamera.flyToByPosition(viewer.scene.camera, position);
+    });
+
+    Sandcastle.addToolbarButton('跳入(经纬度)', function () {
+      Freedo.FdCamera.goToByPosition(viewer.scene.camera, position);
+    });
+  </script>
+</body>
+
+</html>

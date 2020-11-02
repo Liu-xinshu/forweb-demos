@@ -12,11 +12,15 @@ export default {
   components: {
     Earth,
   },
+  mounted(){
+  }
 };
 </script>
 <style lang="scss">
 div#app {
   width: 100%;
   height: 100%;
+  overflow: hidden;
+  
 }
 </style>

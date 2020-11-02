@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>相机高度监控</title>
+  <link rel="stylesheet" href="<%= VUE_APP_BASE_URL %>static/js/Freedo/freedo/Freedo/Widgets/widgets.css" />
+  <link rel="stylesheet" href="https://forweb.gbim360.com/latest/freedox/Examples/static/bucket.css">
+  <style>
+    * {
+      padding: 0;
+      margin: 0;
+    }
+
+    html,
+    body,
+    #freedoContainer {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+    }
+
+    .cesium-viewer-toolbar {
+      left: 5px;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="background-plane"></div>
+  <div id="freedoContainer" class="fullSize"></div>
+  <div id="loadingOverlay">
+    <h1>Loading...</h1>
+  </div>
+  <div id="toolbar"></div>
+
+
+
+  <script src="<%= VUE_APP_BASE_URL %>static/js/Freedo/freedo/Freedo/Freedo.js"></script>
+  <script src="<%= VUE_APP_BASE_URL %>static/js/Freedo/freedox/FreedoX/ThirdParty/1710_lodash/lodash.min.js"></script>
+  <script src="<%= VUE_APP_BASE_URL %>static/js/Freedo/freedox/FreedoX/FreedoX.js"></script>
+  <script src="<%= VUE_APP_BASE_URL %>static/js/turf.min.js"></script>
+  <script src="<%= VUE_APP_BASE_URL %>static/js/heatmap.min.js"></script>
+  <script src="<%= VUE_APP_BASE_URL %>static/js/Sandcastle-header.js"></script>
+  <script>
+
+    var viewer = Freedo.FdApp.createDefaultViewer('freedoContainer');
+
+    var data = [
+      { id: 1, type: 'less', start: 10000, end: 0 },
+      { id: 2, type: 'more', start: 0, end: 10000 },
+      { id: 3, type: 'range', start: 10000, end: 20000 }
+    ]
+    var ch = new Freedo.FdCamera.FdCameraHeight(viewer.scene.camera, data);
+
+    ch.on(function (en, ev) {
+      if (en === 'CameraHeightChanged') {
+        console.log(ev);
+      }
+    });
+
+  </script>
+</body>
+
+</html>

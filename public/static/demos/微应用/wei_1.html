@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>测量工具</title>
+  <link rel="stylesheet" href="<%= VUE_APP_BASE_URL %>static/js/Freedo/freedo/Freedo/Widgets/widgets.css" />
+  <link rel="stylesheet" href="https://forweb.gbim360.com/latest/freedox/Examples/static/bucket.css">
+</head>
+
+<body>
+
+  <div id="freedoContainer" class="fullSize"></div>
+  <div id="loadingOverlay">
+    <h1>Loading...</h1>
+  </div>
+  <div id="toolbar"></div>
+
+  <script src="<%= VUE_APP_BASE_URL %>static/js/Freedo/freedo/Freedo/Freedo.js"></script>
+  <script src="<%= VUE_APP_BASE_URL %>static/js/Freedo/freedox/FreedoX/ThirdParty/1710_lodash/lodash.min.js"></script>
+  <script src="<%= VUE_APP_BASE_URL %>static/js/Freedo/freedox/FreedoX/FreedoX.js"></script>
+  <script src="<%= VUE_APP_BASE_URL %>static/js/Sandcastle-header.js"></script>
+
+  <script>
+    var viewer = Freedo.FdApp.createDefaultViewer('freedoContainer');
+    var am = new Freedo.FdMicroApp.FdAnalysisManager(viewer);
+    var terrainManager = new Freedo.FdTools.FdTerrain(viewer);
+
+    ////////////////////////////////////////////////////////////////////////////////////////////
+    var pmtsManager = new Freedo.FdTools.FdPMTSManager(viewer);
+    var url = 'https://cfgateway.gbim360.cn/freeserver-pmts/services/share/0ab675ef-72de-4b52-ae0a-96dae76a95b4/pmts/1.1.0/PMTSCapabilities.json?accesskey=a748d6c5-16c5-40af-95d6-cdb2ffa4cb64';
+
+    //指定数据的位置，如果数据本身没有带位置
+    var pos = Freedo.Cartesian3.fromDegrees(116, 40, -15);
+    var modelMatrix = Freedo.Transforms.eastNorthUpToFixedFrame(pos);
+
+    var pmtsID = pmtsManager.add({
+      id: 'wenhuashi',
+      url: url,
+      modelMatrix: modelMatrix, //如果数据本身已经带了坐标则不需要指定本参数
+      flytoOrGoto: true //是否跳入到PMTS数据，true为跳入，false为飞入，默认飞入
+    }, undefined);
+
+    //加载完成后得到PModel
+    var pModel;
+    pmtsManager.on(function (en, ev) {
+      if (en == 'PModelLoaded') {
+        //pmtsManager.getPmts(pmtsID).pModelInfos变量存放了该PMTS服务中包含的所有数据信息
+        //可以遍历pModelInfos得到全部的PModel
+        pModel = pmtsManager.getPmts(pmtsID).pModelInfos[0].pModel;
+      }
+    });
+
+    ////////////////////////////////////////////////////////////////////////////////////////////
+
+    // var tileset = viewer.scene.primitives.add(new Freedo.FreedoPModelset({
+    //     url: '../../sampleData/文化室2018z'
+    // }));
+
+    viewer.scene.debugCommandFilter = function (cmd) {
+      const owner = cmd.owner;
+      if (owner instanceof Freedo.Primitive && owner.isDestroyed())
+        return false;
+      return true;
+    };
+
+    //viewer.scene.pickTranslucentDepth = false;
+
+    // tileset.readyPromise.then(function (tileset) {
+    //     viewer.camera.viewBoundingSphere(tileset.boundingSphere, new Freedo.HeadingPitchRange(0, -0.5, 0));
+    //     viewer.camera.lookAtTransform(Freedo.Matrix4.IDENTITY);
+
+    //     //let pm1 = new Freedo.FdMicroApp.FdPickPMComponent(viewer);
+    //     //pm1.setBaseColor(255, 255, 255, 0.2);
+    //     //pm1.showComponent('xxx', tileset, true);
+    // });
+
+    var imageryManager = new Freedo.FdTools.FdImageryLayersManager(viewer);
+    imageryManager.addDefaultImageryLayer();
+
+    am.on(function (eventType, eventArg) {
+      if (eventType == "DataChanged") {
+        //console.log(eventArg);
+        needSave = true;
+      }
+    })
+
+    Sandcastle.addToolbarButton('多点坐标量测', function () {
+      am.start('SINGLE_POINT');
+    });
+
+    Sandcastle.addToolbarButton('单点坐标量测', function () {
+      am.start('SINGLE_POINT');
+      am.setSingleMode(true);
+    });
+
+    Sandcastle.addToolbarButton('两点距离量测', function () {
+      am.start('LINE_DISTANCE');
+    });
+
+    Sandcastle.addToolbarButton('多点距离量测', function () {
+      am.start('SEGMENTS_DISTANCE');
+      am.setSumPointMode(false);
+    });
+
+    Sandcastle.addToolbarButton('多点距离量测(累计长)', function () {
+      am.start('SEGMENTS_DISTANCE');
+      am.setSumPointMode(true);
+    });
+
+    Sandcastle.addToolbarButton('面积量测', function () {
+      am.start('AREA');
+    });
+
+    Sandcastle.addToolbarButton('高程量测', function () {
+      am.start('HEIGHT');
+    });
+
+    Sandcastle.addToolbarButton('夹角量测', function () {
+      am.start('ANGLE');
+    });
+
+    Sandcastle.addToolbarButton('STK地形（全球、中国高精度）', function () {
+      terrainManager.setTerrain("//terrain.gbim360.com/", "STK");
+    });
+
+    Sandcastle.addToolbarButton('在控制台中输出数据', function () {
+      console.log(am.getData());
+    });
+
+    Sandcastle.addToolbarButton('清空数据', function () {
+      am.removeAll();
+    });
+
+    Sandcastle.addToolbarButton('取消', function () {
+      am.cancel();
+    });
+
+    var needSave = false;
+
+    function writeToLocalStorage(prop, data) {
+      if (!Freedo.defined(data)) {
+        localStorage.removeItem(prop);
+      } else {
+        localStorage[prop] = JSON.stringify(data);
+      }
+    }
+
+    function readFromLocalStorage(prop) {
+      let rawData;
+      if (typeof localStorage[prop] !== 'undefined') {
+        try {
+          rawData = JSON.parse(localStorage[prop]);
+        } catch (error) {
+          console.log(error);
+        }
+      }
+
+      return rawData;
+    }
+
+    function save() {
+      if (needSave) {
+        writeToLocalStorage("surveyOptions", am.surveyOptions);
+        needSave = false;
+      }
+    };
+
+    function read() {
+      let rawData = readFromLocalStorage("surveyOptions");
+      am.surveyOptions = rawData;
+    };
+
+    setTimeout("read()", 1000);
+    setInterval("save()", 1000);
+
+  </script>
+</body>
+
+</html>
