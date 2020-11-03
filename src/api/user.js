@@ -1,4 +1,4 @@
-import request from "../../utils/request";
+import request from "@/utils/request";
 
 // 用户登录
 export function LOGIN(params) {
@@ -13,4 +13,9 @@ export function GET_USER_INFO(params) {
 // 获取菜单
 export function GET_MENUS() {
   return request.get("/getMenus");
+}
+
+// 获取路由
+export function GET_ROUTER(params) {
+  return request.post("/getRouter", params);
 }

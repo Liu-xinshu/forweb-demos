@@ -8,7 +8,7 @@
       :default-active="defaultActive"
       :collapse="isCollapse"
     >
-      <menu-tree :menus="menus"></menu-tree>
+      <menu-tree :menus="menus" :handleMenuClick="handleMenuClick"></menu-tree>
     </el-menu>
   </div>
 </template>
@@ -46,6 +46,33 @@ export default {
   methods: {
     changeIsCollapse() {
       this.isCollapse = !this.isCollapse;
+    },
+    handleMenuClick(obj) {
+      let { fileName, children, path, vueName, parentName } = obj;
+
+      if (!children || children.length <= 0) {
+        if (fileName) {
+          this.$router
+            .push({
+              path: "Code",
+              query: {
+                fileName,
+              },
+            })
+            .catch((err) => {});
+        } else if (vueName) {
+          this.$router
+            .push({
+              path: "/vuep",
+              query: {
+                vueName,
+              },
+            })
+            .catch((err) => {});
+        } else {
+          this.$router.push({ path }).catch((err) => {});
+        }
+      }
     },
   },
 };

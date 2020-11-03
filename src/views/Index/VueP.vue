@@ -4,7 +4,7 @@
   </div>
 </template>
 <script>
-import request from "../../utils/request";
+import request from "@/utils/request";
 export default {
   // 监听,当路由发生变化的时候执行
   watch: {

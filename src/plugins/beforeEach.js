@@ -17,15 +17,16 @@ router.beforeEach((to, from, next) => {
       next({ path: "/" });
     } else {
       if ($getters["user/queryRole"].length <= 0) {
-        
-        $dispatch("user/getUserInfo").then((role) => {
-          $dispatch("user/getRoutes", role).then(() => {
-              router.addRoutes($getters["user/queryAsyncRoutes"]);
-              next({ ...to, replace: true });
-            }).catch((err) => console.log(err));
-            
-            
-        }).catch((err) => console.log(err));
+        $dispatch("user/getUserInfo")
+          .then((role) => {
+            $dispatch("user/getRoutes", role)
+              .then(() => {
+                router.addRoutes($getters["user/queryAsyncRoutes"]);
+                next({ ...to, replace: true });
+              })
+              .catch((err) => console.log(err));
+          })
+          .catch((err) => console.log(err));
       } else {
         next();
       }

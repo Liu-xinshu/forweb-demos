@@ -1,6 +1,6 @@
 const path = require("path");
 const resolve = (dir) => path.join(__dirname, dir);
-const BASE_URL = process.env.VUE_APP_BASE_URL;
+const BASE_URL = "";
 const IS_PROD = ["production", "prod"].includes(process.env.NODE_ENV);
 const MonacoWebpackPlugin = require("monaco-editor-webpack-plugin");
 const minify =
@@ -33,389 +33,275 @@ module.exports = {
      */
     create3d: {
       entry: "./src/demos.js",
-      output: {
-        path: resolve("public/static/demos/快速入门"),
-      },
       template: "public/static/demos/快速入门/create3d.html",
       filename: "create3d.html",
       chunks: ["chunk-vendors", "chunk-common", "create3d"],
-      minify,
+      minify: false,
     },
     wuqiu: {
       entry: "./src/demos.js",
-      output: {
-        path: resolve("public/static/demos/快速入门"),
-      },
       template: "public/static/demos/快速入门/wuqiu.html",
       filename: "wuqiu.html",
       chunks: ["chunk-vendors", "chunk-common", "wuqiu"],
-      minify,
+      minify: false,
     },
     tiankong: {
       entry: "./src/demos.js",
-      output: {
-        path: resolve("public/static/demos/快速入门"),
-      },
       template: "public/static/demos/快速入门/tiankong.html",
       filename: "tiankong.html",
       chunks: ["chunk-vendors", "chunk-common", "tiankong"],
-      minify,
+      minify: false,
     },
     beijing: {
       entry: "./src/demos.js",
-      output: {
-        path: resolve("public/static/demos/快速入门"),
-      },
       template: "public/static/demos/快速入门/beijing.html",
       filename: "beijing.html",
       chunks: ["chunk-vendors", "chunk-common", "beijing"],
-      minify,
+      minify: false,
     },
     /**
      * 漫游交互
      */
     dingwei: {
       entry: "./src/demos.js",
-      output: {
-        path: resolve("public/static/demos/漫游交互"),
-      },
       template: "public/static/demos/漫游交互/dingwei.html",
       filename: "dingwei.html",
       chunks: ["chunk-vendors", "chunk-common", "dingwei"],
-      minify,
+      minify: false,
     },
     diyirencheng: {
       entry: "./src/demos.js",
-      output: {
-        path: resolve("public/static/demos/漫游交互"),
-      },
       template: "public/static/demos/漫游交互/diyirencheng.html",
       filename: "diyirencheng.html",
       chunks: ["chunk-vendors", "chunk-common", "diyirencheng"],
-      minify,
+      minify: false,
     },
     fangda: {
       entry: "./src/demos.js",
-      output: {
-        path: resolve("public/static/demos/漫游交互"),
-      },
       template: "public/static/demos/漫游交互/fangda.html",
       filename: "fangda.html",
       chunks: ["chunk-vendors", "chunk-common", "fangda"],
-      minify,
+      minify: false,
     },
     feiru: {
       entry: "./src/demos.js",
-      output: {
-        path: resolve("public/static/demos/漫游交互"),
-      },
       template: "public/static/demos/漫游交互/feiru.html",
       filename: "feiru.html",
       chunks: ["chunk-vendors", "chunk-common", "feiru"],
-      minify,
+      minify: false,
     },
     feixing: {
       entry: "./src/demos.js",
-      output: {
-        path: resolve("public/static/demos/漫游交互"),
-      },
       template: "public/static/demos/漫游交互/feixing.html",
       filename: "feixing.html",
       chunks: ["chunk-vendors", "chunk-common", "feixing"],
-      minify,
+      minify: false,
     },
     gaodujiankong: {
       entry: "./src/demos.js",
-      output: {
-        path: resolve("public/static/demos/漫游交互"),
-      },
       template: "public/static/demos/漫游交互/gaodujiankong.html",
       filename: "gaodujiankong.html",
       chunks: ["chunk-vendors", "chunk-common", "gaodujiankong"],
-      minify,
+      minify: false,
     },
     guancha: {
       entry: "./src/demos.js",
-      output: {
-        path: resolve("public/static/demos/漫游交互"),
-      },
       template: "public/static/demos/漫游交互/guancha.html",
       filename: "guancha.html",
       chunks: ["chunk-vendors", "chunk-common", "guancha"],
-      minify,
+      minify: false,
     },
     huifu: {
       entry: "./src/demos.js",
-      output: {
-        path: resolve("public/static/demos/漫游交互"),
-      },
       template: "public/static/demos/漫游交互/huifu.html",
       filename: "huifu.html",
       chunks: ["chunk-vendors", "chunk-common", "huifu"],
-      minify,
+      minify: false,
     },
     jieping: {
       entry: "./src/demos.js",
-      output: {
-        path: resolve("public/static/demos/漫游交互"),
-      },
       template: "public/static/demos/漫游交互/jieping.html",
       filename: "jieping.html",
       chunks: ["chunk-vendors", "chunk-common", "jieping"],
-      minify,
+      minify: false,
     },
     jvjiao: {
       entry: "./src/demos.js",
-      output: {
-        path: resolve("public/static/demos/漫游交互"),
-      },
       template: "public/static/demos/漫游交互/jvjiao.html",
       filename: "jvjiao.html",
       chunks: ["chunk-vendors", "chunk-common", "jvjiao"],
-      minify,
+      minify: false,
     },
     niaokan: {
       entry: "./src/demos.js",
-      output: {
-        path: resolve("public/static/demos/漫游交互"),
-      },
       template: "public/static/demos/漫游交互/niaokan.html",
       filename: "niaokan.html",
       chunks: ["chunk-vendors", "chunk-common", "niaokan"],
-      minify,
+      minify: false,
     },
     xiangjikongzhi: {
       entry: "./src/demos.js",
-      output: {
-        path: resolve("public/static/demos/漫游交互"),
-      },
       template: "public/static/demos/漫游交互/xiangjikongzhi.html",
       filename: "xiangjikongzhi.html",
       chunks: ["chunk-vendors", "chunk-common", "xiangjikongzhi"],
-      minify,
+      minify: false,
     },
     zhuandong: {
       entry: "./src/demos.js",
-      output: {
-        path: resolve("public/static/demos/漫游交互"),
-      },
       template: "public/static/demos/漫游交互/zhuandong.html",
       filename: "zhuandong.html",
       chunks: ["chunk-vendors", "chunk-common", "zhuandong"],
-      minify,
+      minify: false,
     },
     /**
      * 微应用
      */
     wei_1: {
       entry: "./src/demos.js",
-      output: {
-        path: resolve("public/static/demos/微应用"),
-      },
       template: "public/static/demos/微应用/wei_1.html",
       filename: "wei_1.html",
       chunks: ["chunk-vendors", "chunk-common", "wei_1"],
-      minify,
+      minify: false,
     },
     wei_2: {
       entry: "./src/demos.js",
-      output: {
-        path: resolve("public/static/demos/微应用"),
-      },
       template: "public/static/demos/微应用/wei_2.html",
       filename: "wei_2.html",
       chunks: ["chunk-vendors", "chunk-common", "wei_2"],
-      minify,
+      minify: false,
     },
     wei_3: {
       entry: "./src/demos.js",
-      output: {
-        path: resolve("public/static/demos/微应用"),
-      },
       template: "public/static/demos/微应用/wei_3.html",
       filename: "wei_3.html",
       chunks: ["chunk-vendors", "chunk-common", "wei_3"],
-      minify,
+      minify: false,
     },
     wei_4: {
       entry: "./src/demos.js",
-      output: {
-        path: resolve("public/static/demos/微应用"),
-      },
       template: "public/static/demos/微应用/wei_4.html",
       filename: "wei_4.html",
       chunks: ["chunk-vendors", "chunk-common", "wei_4"],
-      minify,
+      minify: false,
     },
     wei_5: {
       entry: "./src/demos.js",
-      output: {
-        path: resolve("public/static/demos/微应用"),
-      },
       template: "public/static/demos/微应用/wei_5.html",
       filename: "wei_5.html",
       chunks: ["chunk-vendors", "chunk-common", "wei_5"],
-      minify,
+      minify: false,
     },
     wei_6: {
       entry: "./src/demos.js",
-      output: {
-        path: resolve("public/static/demos/微应用"),
-      },
       template: "public/static/demos/微应用/wei_6.html",
       filename: "wei_6.html",
       chunks: ["chunk-vendors", "chunk-common", "wei_6"],
-      minify,
+      minify: false,
     },
     wei_7: {
       entry: "./src/demos.js",
-      output: {
-        path: resolve("public/static/demos/微应用"),
-      },
       template: "public/static/demos/微应用/wei_7.html",
       filename: "wei_7.html",
       chunks: ["chunk-vendors", "chunk-common", "wei_7"],
-      minify,
+      minify: false,
     },
     wei_8: {
       entry: "./src/demos.js",
-      output: {
-        path: resolve("public/static/demos/微应用"),
-      },
       template: "public/static/demos/微应用/wei_8.html",
       filename: "wei_8.html",
       chunks: ["chunk-vendors", "chunk-common", "wei_8"],
-      minify,
+      minify: false,
     },
     wei_9: {
       entry: "./src/demos.js",
-      output: {
-        path: resolve("public/static/demos/微应用"),
-      },
       template: "public/static/demos/微应用/wei_9.html",
       filename: "wei_9.html",
       chunks: ["chunk-vendors", "chunk-common", "wei_9"],
-      minify,
+      minify: false,
     },
     wei_10: {
       entry: "./src/demos.js",
-      output: {
-        path: resolve("public/static/demos/微应用"),
-      },
       template: "public/static/demos/微应用/wei_10.html",
       filename: "wei_10.html",
       chunks: ["chunk-vendors", "chunk-common", "wei_10"],
-      minify,
+      minify: false,
     },
     wei_11: {
       entry: "./src/demos.js",
-      output: {
-        path: resolve("public/static/demos/微应用"),
-      },
       template: "public/static/demos/微应用/wei_11.html",
       filename: "wei_11.html",
       chunks: ["chunk-vendors", "chunk-common", "wei_11"],
-      minify,
+      minify: false,
     },
     wei_12: {
       entry: "./src/demos.js",
-      output: {
-        path: resolve("public/static/demos/微应用"),
-      },
       template: "public/static/demos/微应用/wei_12.html",
       filename: "wei_12.html",
       chunks: ["chunk-vendors", "chunk-common", "wei_12"],
-      minify,
+      minify: false,
     },
     wei_13: {
       entry: "./src/demos.js",
-      output: {
-        path: resolve("public/static/demos/微应用"),
-      },
       template: "public/static/demos/微应用/wei_13.html",
       filename: "wei_13.html",
       chunks: ["chunk-vendors", "chunk-common", "wei_13"],
-      minify,
+      minify: false,
     },
     wei_14: {
       entry: "./src/demos.js",
-      output: {
-        path: resolve("public/static/demos/微应用"),
-      },
       template: "public/static/demos/微应用/wei_14.html",
       filename: "wei_14.html",
       chunks: ["chunk-vendors", "chunk-common", "wei_14"],
-      minify,
+      minify: false,
     },
     wei_15: {
       entry: "./src/demos.js",
-      output: {
-        path: resolve("public/static/demos/微应用"),
-      },
       template: "public/static/demos/微应用/wei_15.html",
       filename: "wei_15.html",
       chunks: ["chunk-vendors", "chunk-common", "wei_15"],
-      minify,
+      minify: false,
     },
     wei_16: {
       entry: "./src/demos.js",
-      output: {
-        path: resolve("public/static/demos/微应用"),
-      },
       template: "public/static/demos/微应用/wei_16.html",
       filename: "wei_16.html",
       chunks: ["chunk-vendors", "chunk-common", "wei_16"],
-      minify,
+      minify: false,
     },
     wei_17: {
       entry: "./src/demos.js",
-      output: {
-        path: resolve("public/static/demos/微应用"),
-      },
       template: "public/static/demos/微应用/wei_17.html",
       filename: "wei_17.html",
       chunks: ["chunk-vendors", "chunk-common", "wei_17"],
-      minify,
+      minify: false,
     },
     wei_18: {
       entry: "./src/demos.js",
-      output: {
-        path: resolve("public/static/demos/微应用"),
-      },
       template: "public/static/demos/微应用/wei_18.html",
       filename: "wei_18.html",
       chunks: ["chunk-vendors", "chunk-common", "wei_18"],
-      minify,
+      minify: false,
     },
     wei_19: {
       entry: "./src/demos.js",
-      output: {
-        path: resolve("public/static/demos/微应用"),
-      },
       template: "public/static/demos/微应用/wei_19.html",
       filename: "wei_19.html",
       chunks: ["chunk-vendors", "chunk-common", "wei_19"],
-      minify,
+      minify: false,
     },
     wei_20: {
       entry: "./src/demos.js",
-      output: {
-        path: resolve("public/static/demos/微应用"),
-      },
       template: "public/static/demos/微应用/wei_20.html",
       filename: "wei_20.html",
       chunks: ["chunk-vendors", "chunk-common", "wei_20"],
-      minify,
+      minify: false,
     },
     react: {
       entry: "./src/demos.js",
-      output: {
-        path: resolve("public/static/reactDemos"),
-      },
       template: "public/static/reactDemos/React.html",
       filename: "React.html",
       chunks: ["chunk-vendors", "chunk-common", "react"],
-      minify,
+      minify: false,
     },
   },
   devServer: {

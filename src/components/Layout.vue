@@ -70,7 +70,6 @@ export default {
       // 退出系统
       if (v === "drop-out") {
         sessionStorage.removeItem("token");
-        $commit("user/dropout");
         location.reload();
       }
     },

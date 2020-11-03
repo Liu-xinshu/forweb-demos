@@ -8,7 +8,7 @@
   <div class="highlight" v-html="html"></div>
 </template>
 <script>
-import request from "../../../utils/request";
+import request from "@/utils/request";
 import Prism from "prismjs";
 import "prismjs/themes/prism.css";
 export default {
@@ -25,7 +25,3 @@ export default {
   },
 };
 </script>
-<style scoped lang="scss">
-.highlight {
-}
-</style>
